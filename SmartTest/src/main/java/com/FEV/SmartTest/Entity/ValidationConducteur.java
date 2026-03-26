@@ -1,0 +1,36 @@
+package com.FEV.SmartTest.Entity;
+
+import com.FEV.SmartTest.Enum.DecisionValidation;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@Entity
+@Table(name = "validation_conducteur")
+public class ValidationConducteur {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    private DecisionValidation decision;
+
+    private String commentaire;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToOne
+    @JoinColumn(name = "demande_essai_id")
+    private DemandeEssai demandeEssai;
+
+}
+
