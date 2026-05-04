@@ -2,6 +2,7 @@ package com.FEV.SmartTest.Service;
 
 import com.FEV.SmartTest.Entity.User;
 import com.FEV.SmartTest.Entity.Vehicule;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Repository.VehiculeRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,12 @@ public class VehiculeService {
         }
     }
     public Vehicule createVehicule(Vehicule vehicule) {
-        checkCharge();
+        //checkCharge();
         return vehiculeRepository.save(vehicule);
+    }
+    public Vehicule getVehiculeById(Long id) {
+        return vehiculeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehicule non trouvé avec id : " + id));
     }
 
     public List<Vehicule> getAllVehicules() {
@@ -40,10 +45,13 @@ public class VehiculeService {
         checkCharge();
         return vehiculeRepository.findById(id).map(v -> {
             v.setNomAppliImmat(updatedVehicule.getNomAppliImmat());
+            v.setIdentificateur(updatedVehicule.getIdentificateur());
             v.setImmatriculation(updatedVehicule.getImmatriculation());
+            v.setMarque(updatedVehicule.getMarque());
             v.setVin(updatedVehicule.getVin());
             v.setSite(updatedVehicule.getSite());
             v.setResponsable(updatedVehicule.getResponsable());
+            v.setClient(updatedVehicule.getClient());
             v.setLocalisation(updatedVehicule.getLocalisation());
             v.setMotorisation(updatedVehicule.getMotorisation());
             v.setMoteur(updatedVehicule.getMoteur());
@@ -74,5 +82,19 @@ public class VehiculeService {
         Vehicule duplicate = new Vehicule();
         BeanUtils.copyProperties(v, duplicate, "id"); // copier tout sauf l'ID
         return vehiculeRepository.save(duplicate);
+    }
+
+    public long getVehiculeCount() {
+        return vehiculeRepository.count();
+    }
+
+
+    public List<Vehicule> getAllVehiculesClient() {
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client = currentUser.getClient();
+
+        return vehiculeRepository.findByClient(client);
     }
 }

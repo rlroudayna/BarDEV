@@ -28,7 +28,8 @@ public class Cycle_conduiteController {
     // READ ALL
     @GetMapping
     public ResponseEntity<List<CycleConduite>> getAllCycles() {
-        return ResponseEntity.ok(cycleService.getAllTests());
+
+        return ResponseEntity.ok(cycleService.getAllCycleClient());
     }
 
     // READ ONE
@@ -54,4 +55,9 @@ public class Cycle_conduiteController {
         cycleService.deleteTest(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/count")
+    public long getCycleCount() {
+        return cycleService.getCycleCount();
+    }
+
 }

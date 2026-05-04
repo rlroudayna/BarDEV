@@ -1,10 +1,12 @@
 package com.FEV.SmartTest.Controller;
 
 import com.FEV.SmartTest.Entity.User;
+import com.FEV.SmartTest.Service.CustomUserDetailsService;
 import com.FEV.SmartTest.Service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
@@ -14,9 +16,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final CustomUserDetailsService customUserDetailsService ;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, CustomUserDetailsService customUserDetailsService) {
         this.userService = userService;
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     // GET all users
@@ -33,11 +37,6 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST create user
-    @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
-    }
 
     // PUT update user
     @PutMapping("/{id}")
@@ -50,5 +49,32 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUserEndpoint() {
+        Optional<User> currentUser = customUserDetailsService.getCurrentUser();
+
+        if (currentUser.isEmpty()) {
+            return ResponseEntity.status(401).build(); // non authentifié
+        }
+
+        return ResponseEntity.ok(currentUser.get());
+    }
+    @PutMapping("/{id}/image")
+    public ResponseEntity<User> updateProfileImage(
+            @PathVariable Long id,
+            @RequestBody String image
+    ) {
+        User updatedUser = userService.updateProfileImage(id, image);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/{id}/phone")
+    public ResponseEntity<User> updatePhone(
+            @PathVariable Long id,
+            @RequestBody String phone
+    ) {
+        User updatedUser = userService.updatePhone(id, phone);
+        return ResponseEntity.ok(updatedUser);
     }
 }

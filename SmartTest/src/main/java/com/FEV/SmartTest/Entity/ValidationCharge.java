@@ -1,11 +1,14 @@
 package com.FEV.SmartTest.Entity;
 
 import com.FEV.SmartTest.Enum.DecisionValidation;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +25,7 @@ public class ValidationCharge {
     private String fichierBaR;
     private String fichierChecklist;
 
+
     @Enumerated(EnumType.STRING)
     private DecisionValidation validation;
 
@@ -29,10 +33,12 @@ public class ValidationCharge {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private User user;   // relation avec entité User
 
     @OneToOne
     @JoinColumn(name = "demande_essai_id")
+    @JsonBackReference
     private DemandeEssai demandeEssai;
 
+    private LocalDate dateValidation;
 }

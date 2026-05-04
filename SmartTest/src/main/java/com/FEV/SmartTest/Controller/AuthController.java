@@ -3,6 +3,7 @@ package com.FEV.SmartTest.Controller;
 import com.FEV.SmartTest.Configuration.JwtUtils;
 import com.FEV.SmartTest.Entity.User;
 import com.FEV.SmartTest.Repository.UserRepository;
+import com.FEV.SmartTest.Service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,8 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
     private final UserRepository userRepository;
+    private final UserService userService;
+
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
@@ -31,7 +34,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+        //userService.checkAdmin();
+
+        if (!userRepository.findAllByEmail(user.getEmail()).isEmpty()) {
             return ResponseEntity.badRequest().body("Cet email est déjà utilisé.");
         }
 
@@ -49,10 +54,10 @@ public class AuthController {
                 authData.put("type", "Bearer");
                 return ResponseEntity.ok(authData);
             }
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Nom d’utilisateur ou mot de passe invalide.");
         } catch (AuthenticationException e) {
             log.error(e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Nom d’utilisateur ou mot de passe invalide.");
         }
     }
 }

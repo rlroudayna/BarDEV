@@ -1,7 +1,8 @@
 package com.FEV.SmartTest.Enum;
 
 public enum Role {
-    CONDUCTEUR,
+    TECHNICIEN_ESSAI,
     CHARGE_ESSAI,
-    ADMIN
+    ADMIN,
+    EXTERNE,
 }

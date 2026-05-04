@@ -2,6 +2,8 @@ package com.FEV.SmartTest.Service;
 
 import com.FEV.SmartTest.Entity.CycleConduite;
 import com.FEV.SmartTest.Entity.User;
+import com.FEV.SmartTest.Entity.Vehicule;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Repository.CycleConduiteRepository;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +49,7 @@ public class CycleService {
             t.setNom(updatedCycleConduite.getNom());
             t.setFamilleTest(updatedCycleConduite.getFamilleTest());
             t.setDuree(updatedCycleConduite.getDuree());
+            t.setClient(updatedCycleConduite.getClient());
             t.setNombrePhase(updatedCycleConduite.getNombrePhase());
             t.setNombreStabilises(updatedCycleConduite.getNombreStabilises());
             t.setTraceFilePath(updatedCycleConduite.getTraceFilePath());
@@ -60,5 +63,16 @@ public class CycleService {
         cycleConduiteRepository.deleteById(id);
     }
 
+    public long getCycleCount() {
+        return cycleConduiteRepository.count();
+    }
+    public List<CycleConduite> getAllCycleClient() {
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client = currentUser.getClient();
+
+        return cycleConduiteRepository.findByClient(client);
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.FEV.SmartTest.Entity;
 
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Enum.ModeConduite;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,7 +21,10 @@ public class Calage {
     private Long id;
 
     private String nom;
+    @Enumerated(EnumType.STRING)
+    private Client client;
 
+    private Float temperature;
     @ManyToOne
     @JoinColumn(name = "vehicule_id")
     private Vehicule vehiculeAssocie;
@@ -32,9 +36,9 @@ public class Calage {
     @Enumerated(EnumType.STRING)
     private ModeConduite modeConduite;
 
-    private Float a;
-    private Float b;
-    private Float c;
+    private Double  a;
+    private Double  b;
+    private Double  c;
     private String description;
 }
 

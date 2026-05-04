@@ -7,4 +7,5 @@ import java.util.List;
 public interface ValidationChargeRepository  extends JpaRepository<ValidationCharge, Long> {
     List<ValidationCharge> findByUserId(Long utilisateurId);
     List<ValidationCharge> findByDemandeEssaiId(Long demandeEssaiId);
+    boolean existsByDemandeEssaiId(Long demandeId);
 }

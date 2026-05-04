@@ -1,5 +1,6 @@
 package com.FEV.SmartTest.Entity;
 
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Enum.FamilleTest;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,8 @@ public class CycleConduite {
     private Long id;
 
     private String nom;
-
+    @Enumerated(EnumType.STRING)
+    private Client client;
     @Enumerated(EnumType.STRING)
     private FamilleTest familleTest;
 

@@ -1,6 +1,8 @@
 package com.FEV.SmartTest.Entity;
 
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Enum.ModeBanc;
+import com.FEV.SmartTest.Enum.Norme;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,12 +19,12 @@ public class LoiRoute {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nom;
-
+    private Float temperature;
     @Enumerated(EnumType.STRING)
-    private ModeBanc modeBanc;
-
+    private Client client;
+    @Enumerated(EnumType.STRING)
+    private Norme norme;
     private Float inertieKg;
     private Float masseEssaiKg;
     private Float inertieRotativeTNRKg;
@@ -31,5 +33,4 @@ public class LoiRoute {
     private Float f1;
     private Float f2;
     private String description;
-
 }

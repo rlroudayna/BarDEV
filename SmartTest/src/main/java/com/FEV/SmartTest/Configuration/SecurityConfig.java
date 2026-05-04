@@ -1,6 +1,5 @@
 package com.FEV.SmartTest.Configuration;
 
-import com.FEV.SmartTest.Filter.JwtFilter;
 import com.FEV.SmartTest.Service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,5 +64,5 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtFilter(customUserDetailsService, jwtUtils),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();
-    }
+         }
 }

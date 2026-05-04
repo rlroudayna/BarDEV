@@ -32,10 +32,14 @@ public class VehiculeController {
     }
 
     @GetMapping
-    public List<Vehicule> getAllVehicules() {
-        return vehiculeService.getAllVehicules();
+    public List<Vehicule> getAllVehiculesClient() {
+        return vehiculeService.getAllVehiculesClient();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Vehicule> getVehiculeById(@PathVariable Long id) {
+        return ResponseEntity.ok(vehiculeService.getVehiculeById(id));
+    }
     @PutMapping("/{id}")
     public ResponseEntity<Vehicule> updateVehicule(@PathVariable Long id,
                                                    @RequestBody Vehicule vehicule) {
@@ -52,5 +56,10 @@ public class VehiculeController {
     public ResponseEntity<Vehicule> duplicateVehicule(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(vehiculeService.duplicateVehicule(id));
+    }
+
+    @GetMapping("/count")
+    public long getVehiculeCount() {
+        return vehiculeService.getVehiculeCount();
     }
 }

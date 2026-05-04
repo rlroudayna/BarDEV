@@ -40,9 +40,11 @@ public class CalageService {
 
     // UPDATE
     public Calage updateCalage(Long id, Calage updatedCalage) {
-        checkCharge();
+        // checkCharge();
         return calageRepository.findById(id).map(c -> {
             c.setNom(updatedCalage.getNom());
+            c.setClient(updatedCalage.getClient());
+            c.setTemperature(updatedCalage.getTemperature());
             c.setVehiculeAssocie(updatedCalage.getVehiculeAssocie());
             c.setLoiRouteAssocie(updatedCalage.getLoiRouteAssocie());
             c.setModeConduite(updatedCalage.getModeConduite());
@@ -56,8 +58,20 @@ public class CalageService {
 
     // DELETE
     public void deleteCalage(Long id) {
-        checkCharge();
+        //checkCharge();
         calageRepository.deleteById(id);
+    }
+
+    public long getCalageCount() {
+        return calageRepository.count();
+    }
+
+    public List<Calage> getAllCalagesClient() {
+
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        return calageRepository.findByClient(currentUser.getClient());
     }
 
 

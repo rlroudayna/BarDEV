@@ -1,7 +1,11 @@
 package com.FEV.SmartTest.Repository;
 
 import com.FEV.SmartTest.Entity.Vehicule;
+import com.FEV.SmartTest.Enum.Client;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface VehiculeRepository  extends JpaRepository<Vehicule, Long> {
+    List<Vehicule> findByClient(Client client);
 }

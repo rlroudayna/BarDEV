@@ -28,9 +28,13 @@ import java.util.List;
 
         @GetMapping
         public ResponseEntity<List<LoiRoute>> getAllLoisRoute() {
-            List<LoiRoute> lois = loiRouteService.getAllLoisRoute();
+            List<LoiRoute> lois = loiRouteService.getAllLoisRouteClient();
             return ResponseEntity.ok(lois);
         }
+       @GetMapping("/count")
+       public long getLoiCount() {
+         return loiRouteService.getLoiCount();
+       }
 
         @GetMapping("/{id}")
         public ResponseEntity<LoiRoute> getLoiRouteById(@PathVariable Long id) {
@@ -52,5 +56,10 @@ import java.util.List;
             loiRouteService.deleteLoiRoute(id);
             return ResponseEntity.noContent().build();
         }
+
+
+
+
+
 
     }

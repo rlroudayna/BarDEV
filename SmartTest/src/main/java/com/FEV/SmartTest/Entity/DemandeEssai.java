@@ -1,6 +1,7 @@
 package com.FEV.SmartTest.Entity;
 
 import com.FEV.SmartTest.Enum.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,14 +20,8 @@ public class DemandeEssai {
     private Long id;
 
     private String nomAuto;
-    private String demandeur;
 
-    private java.time.LocalDate datePlanification;
-
-    @Enumerated(EnumType.STRING)
-    private Shift shift;
-
-    private Long numerProjet;
+    private Long numeroProjet;
 
     @Enumerated(EnumType.STRING)
     private StatutGlobal statutGlobal;
@@ -38,26 +33,39 @@ public class DemandeEssai {
     @JoinColumn(name = "vehicule_id")
     private Vehicule vehicule;
 
-    @ManyToOne
-    @JoinColumn(name = "cycle_conduite_id")
-    private CycleConduite cycleConduite;
 
     @ManyToOne
     @JoinColumn(name = "calage_id")
     private Calage calage;
 
+    @ManyToOne
+    @JoinColumn(name = "cycle_id")
+    private CycleConduite cycle ;
+
+    @ManyToOne
+    @JoinColumn(name = "loi_id")
+    private LoiRoute loi;
+
+
     @Enumerated(EnumType.STRING)
     private TypeProjet typeProjet;
 
     @Enumerated(EnumType.STRING)
+    private Client client;
+    private String demandeur;
+    private String technicien;
+    @Enumerated(EnumType.STRING)
     private Banc banc;
+    private java.time.LocalDate datePlanification;
+    @Enumerated(EnumType.STRING)
+    private Shift shift;
 
     private Boolean besoinMaceration;
     private Float temperatureMaceration;
     private Float temperatureEau;
+    private Float hygrometrieEssai;
     private Boolean activationSTT;
     private Float temperatureEssai;
-    private Float hygrometrieEssai;
 
     @Enumerated(EnumType.STRING)
     private ListeGestionBatterie12V gestionBatterie12V;
@@ -69,27 +77,12 @@ public class DemandeEssai {
 
     @Enumerated(EnumType.STRING)
     private TypeEssai typeEssai;
-
     private Boolean verificationCoastDown;
     private Integer nombreDecelerations;
     private String commentaire;
 
-    private Boolean donneesINCA;
-    private Boolean mesuresAuxiliaires;
-    private Boolean gazBrutes;
-    private Boolean gazDilues;
-    private Boolean bag;
 
-    @Enumerated(EnumType.STRING)
-    private CapotListe capot;
-
-    @Enumerated(EnumType.STRING)
-    private SoufflanteListe soufflante;
-
-    private Float qCvs;
-    private Boolean carflow;
     private Boolean mesureSAC;
-
     private Float debitCVsPhase1;
     private Float debitCVsPhase2;
     private Float debitCVsPhase3;
@@ -114,19 +107,18 @@ public class DemandeEssai {
     private String pointPrelevementL2;
     private Boolean ligne3;
     private String pointPrelevementL3;
+    private Boolean microsot;
+    private String pointPrelevementMicrosot;
 
     private Boolean qcl1;
     private String pointPrelevementQCL1;
     private Boolean qcl2;
     private String pointPrelevementQCL2;
 
-    private Boolean pn1;
-    private String pointPrelevementPN1;
-    private Boolean pn2;
-    private String pointPrelevementPN2;
-
+    private Boolean FITR;
+    private String pointPrelevementFITR;
     private Boolean egr;
-    private Boolean microsot;
+
     private Boolean xcu1;
     private String software1;
     private String calibration1;
@@ -137,16 +129,47 @@ public class DemandeEssai {
     private Boolean xcu3;
     private String software3;
     private String calibration3;
-
     private Boolean acquisitionEOBD;
     private String typeAcquisition;
+
     private Boolean mesureCourant;
     private Integer indiceCourant;
     private Integer numeroTermocoupleCourant;
+    private Integer typeMesureCourant;
+
+    @Enumerated(EnumType.STRING)
+    private CapotListe capot;
+
+    @Enumerated(EnumType.STRING)
+    private SoufflanteListe soufflante;
+
+    private Float qCvs;
+    private Boolean carflow;
     private Boolean mesureTension;
     private Integer indiceTension;
     private Integer numeroTermocoupleTension;
-    private Integer typeMesureTension;
+
+    @Enumerated(EnumType.STRING)
+    private TypeMusure typeMesureTension;
     private Boolean thermocouples;
+    private Integer indicethermocouples;
+    private Integer numeroTermocouple;
+
+    @Enumerated(EnumType.STRING)
+    private TypeMusure typeMesurethermocouples;
     private Boolean sondeLambdaLA4;
+    private Integer indicesondeLambdaLA4;
+    private Integer numerosondeLambdaLA4;
+
+    @Enumerated(EnumType.STRING)
+    private TypeMusure typeMesuresondeLambdaLA4;
+
+
+    @OneToOne(mappedBy = "demandeEssai")
+    @JsonManagedReference
+    private ValidationTechnicien validationTechnicien;
+
+    @OneToOne(mappedBy = "demandeEssai")
+    @JsonManagedReference
+    private ValidationCharge validationCharge;
 }

@@ -28,7 +28,11 @@ public class CalageController {
     // READ ALL
     @GetMapping
     public ResponseEntity<List<Calage>> getAllCalages() {
-        return ResponseEntity.ok(calageService.getAllCalages());
+        return ResponseEntity.ok(calageService.getAllCalagesClient());
+    }
+    @GetMapping("/count")
+    public long getCalageCount() {
+        return calageService.getCalageCount();
     }
 
     // READ ONE
@@ -54,6 +58,8 @@ public class CalageController {
         calageService.deleteCalage(id);
         return ResponseEntity.noContent().build();
     }
+
+
 
 
 }

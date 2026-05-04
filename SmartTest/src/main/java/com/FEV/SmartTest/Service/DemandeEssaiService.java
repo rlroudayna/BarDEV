@@ -1,25 +1,47 @@
 package com.FEV.SmartTest.Service;
 
+import com.FEV.SmartTest.DTO.DemandeEssaiRequest;
 import com.FEV.SmartTest.Entity.DemandeEssai;
 import com.FEV.SmartTest.Entity.User;
-import com.FEV.SmartTest.Repository.DemandeEssaiRepository;
+import com.FEV.SmartTest.Enum.*;
+import com.FEV.SmartTest.Repository.*;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 @Service
 public class DemandeEssaiService {
 
-    private final DemandeEssaiRepository repository;
+    private final DemandeEssaiRepository demandRepository;
     private final CustomUserDetailsService userDetailsService;
+    private final ValidationTechnicienRepository validationTechnicienRepo;
+    private final ValidationChargeRepository validationChargeRepo;
+    private final VehiculeRepository vehiculeRepository;
+    private final CalageRepository calageRepository;
+    private final CycleConduiteRepository cycleRepository;
 
-    public DemandeEssaiService(DemandeEssaiRepository repository,
-                               CustomUserDetailsService userDetailsService) {
-        this.repository = repository;
+    public DemandeEssaiService(
+            DemandeEssaiRepository demandRepository,
+            CustomUserDetailsService userDetailsService,
+            ValidationTechnicienRepository validationTechnicienRepo,
+            ValidationChargeRepository validationChargeRepo,
+            VehiculeRepository vehiculeRepository,
+            CalageRepository calageRepository,
+            CycleConduiteRepository cycleRepository
+    ) {
+        this.demandRepository = demandRepository;
         this.userDetailsService = userDetailsService;
+        this.validationTechnicienRepo = validationTechnicienRepo;
+        this.validationChargeRepo = validationChargeRepo;
+        this.vehiculeRepository = vehiculeRepository;
+        this.calageRepository = calageRepository;
+        this.cycleRepository = cycleRepository;
     }
-
-    // 🔒 Vérification rôle
+    //  Vérification rôle
     private void checkCharge() {
         User currentUser = userDetailsService.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
@@ -32,17 +54,125 @@ public class DemandeEssaiService {
     // ------------------ CREATE ------------------
     public DemandeEssai createDemande(DemandeEssai demande) {
         checkCharge();
-        return repository.save(demande);
+        return demandRepository.save(demande);
     }
+    public DemandeEssai create(DemandeEssaiRequest dto) {
+
+        DemandeEssai demande = new DemandeEssai();
+
+        /* =========================
+           RELATIONS
+        ========================= */
+        demande.setVehicule(
+                vehiculeRepository.findById(dto.getVehiculeId())
+                        .orElseThrow(() -> new RuntimeException("Vehicule introuvable"))
+        );
+
+        demande.setCalage(
+                calageRepository.findById(dto.getCalageId())
+                        .orElseThrow(() -> new RuntimeException("Calage introuvable"))
+        );
+
+        demande.setCycle(
+                cycleRepository.findById(dto.getCycleId())
+                        .orElseThrow(() -> new RuntimeException("Cycle introuvable"))
+        );
+
+        /* =========================
+           INFOS PRINCIPALES
+        ========================= */
+        demande.setNomAuto(dto.getNomAuto());
+        demande.setNumeroProjet(dto.getNumerProjet());
+        demande.setDemandeur(dto.getDemandeur());
+        demande.setTechnicien(dto.getTechnicien());
+
+        /* =========================
+           ENUMS (conversion String → Enum)
+        ========================= */
+        if (dto.getStatutDemande() != null)
+            demande.setStatutDemande(StatutDemande.valueOf(dto.getStatutDemande()));
+
+        if (dto.getStatutGlobal() != null)
+            demande.setStatutGlobal(StatutGlobal.valueOf(dto.getStatutGlobal()));
+
+        if (dto.getTypeProjet() != null)
+            demande.setTypeProjet(TypeProjet.valueOf(dto.getTypeProjet()));
+
+        if (dto.getClient() != null)
+            demande.setClient(Client.valueOf(dto.getClient()));
+
+        if (dto.getBanc() != null)
+            demande.setBanc(Banc.valueOf(dto.getBanc()));
+
+        if (dto.getShift() != null)
+            demande.setShift(Shift.valueOf(dto.getShift()));
+
+        if (dto.getTypeEssai() != null)
+            demande.setTypeEssai(TypeEssai.valueOf(dto.getTypeEssai()));
+
+        if (dto.getCapot() != null)
+            demande.setCapot(CapotListe.valueOf(dto.getCapot()));
+
+        if (dto.getSoufflante() != null)
+            demande.setSoufflante(SoufflanteListe.valueOf(dto.getSoufflante()));
+
+        if (dto.getGestionBatterie12V() != null)
+            demande.setGestionBatterie12V(ListeGestionBatterie12V.valueOf(dto.getGestionBatterie12V()));
+
+        /* =========================
+           DATES
+        ========================= */
+        demande.setDatePlanification(dto.getDatePlanification());
+
+        /* =========================
+           CONDITIONS ESSAI
+        ========================= */
+        demande.setBesoinMaceration(dto.getBesoinMaceration());
+        demande.setTemperatureMaceration(dto.getTemperatureMaceration());
+        demande.setTemperatureEau(dto.getTemperatureEau());
+        demande.setHygrometrieEssai(dto.getHygrometrieEssai());
+        demande.setActivationSTT(dto.getActivationSTT());
+        demande.setTemperatureEssai(dto.getTemperatureEssai());
+
+        demande.setSocDepart12V(dto.getSocDepart12V());
+        demande.setActivationClim(dto.getActivationClim());
+        demande.setTemperatureRegulationClim(dto.getTemperatureRegulationClim());
+        demande.setChauffageHabitable(dto.getChauffageHabitable());
+
+        demande.setVerificationCoastDown(dto.getVerificationCoastDown());
+        demande.setNombreDecelerations(dto.getNombreDecelerations());
+        demande.setCommentaire(dto.getCommentaire());
+
+        /* =========================
+           MESURES
+        ========================= */
+        demande.setMesureSAC(dto.getMesureSAC());
+        demande.setDebitCVsPhase1(dto.getDebitCVsPhase1());
+        demande.setDebitCVsPhase2(dto.getDebitCVsPhase2());
+        demande.setDebitCVsPhase3(dto.getDebitCVsPhase3());
+        demande.setDebitCVsPhase4(dto.getDebitCVsPhase4());
+        demande.setDebitCVsPhase5(dto.getDebitCVsPhase5());
+        demande.setDebitCVsPhase6(dto.getDebitCVsPhase6());
+        demande.setDebitCVsPhase7(dto.getDebitCVsPhase7());
+        demande.setDebitCVsPhase8(dto.getDebitCVsPhase8());
+        demande.setDebitCVsPhase9(dto.getDebitCVsPhase9());
+        demande.setDebitCVsPhase10(dto.getDebitCVsPhase10());
+
+        /* =========================
+           SAUVEGARDE
+        ========================= */
+        return demandRepository.save(demande);
+    }
+
 
     // ------------------ READ ALL ------------------
     public List<DemandeEssai> getAllDemandes() {
-        return repository.findAll();
+        return demandRepository.findAll();
     }
 
     // ------------------ READ ONE ------------------
     public DemandeEssai getById(Long id) {
-        return repository.findById(id)
+        return demandRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Demande non trouvée avec id : " + id));
     }
 
@@ -50,62 +180,51 @@ public class DemandeEssaiService {
     public DemandeEssai updateDemande(Long id, DemandeEssai updated) {
         checkCharge();
 
-        return repository.findById(id).map(d -> {
+        return demandRepository.findById(id).map(d -> {
 
-            // 🟢 Informations générales
+            // Informations générales
             d.setNomAuto(updated.getNomAuto());
-            d.setDemandeur(updated.getDemandeur());
-            d.setDatePlanification(updated.getDatePlanification());
-            d.setShift(updated.getShift());
-            d.setNumerProjet(updated.getNumerProjet());
+            d.setNumeroProjet(updated.getNumeroProjet());
             d.setStatutGlobal(updated.getStatutGlobal());
             d.setStatutDemande(updated.getStatutDemande());
+            d.setDemandeur(updated.getDemandeur());
+            d.setTechnicien(updated.getTechnicien());
+            d.setClient(updated.getClient());
 
-            // 🟢 Relations
+            // Relations
             d.setVehicule(updated.getVehicule());
-            d.setCycleConduite(updated.getCycleConduite());
+            d.setCycle(updated.getCycle());
             d.setCalage(updated.getCalage());
 
-            // 🟢 Paramètres projet
-            d.setTypeProjet(updated.getTypeProjet());
+            // Planification
+            d.setDatePlanification(updated.getDatePlanification());
+            d.setShift(updated.getShift());
             d.setBanc(updated.getBanc());
+            d.setTypeProjet(updated.getTypeProjet());
 
-            // 🟢 Conditions essai
+            // Conditions essai
             d.setBesoinMaceration(updated.getBesoinMaceration());
             d.setTemperatureMaceration(updated.getTemperatureMaceration());
             d.setTemperatureEau(updated.getTemperatureEau());
+            d.setHygrometrieEssai(updated.getHygrometrieEssai());
             d.setActivationSTT(updated.getActivationSTT());
             d.setTemperatureEssai(updated.getTemperatureEssai());
-            d.setHygrometrieEssai(updated.getHygrometrieEssai());
 
-            // 🟢 Batterie / clim
+            // Batterie / clim
             d.setGestionBatterie12V(updated.getGestionBatterie12V());
             d.setSocDepart12V(updated.getSocDepart12V());
             d.setActivationClim(updated.getActivationClim());
             d.setTemperatureRegulationClim(updated.getTemperatureRegulationClim());
             d.setChauffageHabitable(updated.getChauffageHabitable());
 
-            // 🟢 Type essai
+            // Type essai
             d.setTypeEssai(updated.getTypeEssai());
             d.setVerificationCoastDown(updated.getVerificationCoastDown());
             d.setNombreDecelerations(updated.getNombreDecelerations());
             d.setCommentaire(updated.getCommentaire());
 
-            // 🟢 Mesures
-            d.setDonneesINCA(updated.getDonneesINCA());
-            d.setMesuresAuxiliaires(updated.getMesuresAuxiliaires());
-            d.setGazBrutes(updated.getGazBrutes());
-            d.setGazDilues(updated.getGazDilues());
-            d.setBag(updated.getBag());
-
-            d.setCapot(updated.getCapot());
-            d.setSoufflante(updated.getSoufflante());
-
-            d.setQCvs(updated.getQCvs());
-            d.setCarflow(updated.getCarflow());
+            // Débits CVS
             d.setMesureSAC(updated.getMesureSAC());
-
-            // 🟢 Débits
             d.setDebitCVsPhase1(updated.getDebitCVsPhase1());
             d.setDebitCVsPhase2(updated.getDebitCVsPhase2());
             d.setDebitCVsPhase3(updated.getDebitCVsPhase3());
@@ -117,7 +236,7 @@ public class DemandeEssaiService {
             d.setDebitCVsPhase9(updated.getDebitCVsPhase9());
             d.setDebitCVsPhase10(updated.getDebitCVsPhase10());
 
-            // 🟢 Particules
+            // Particules
             d.setPm(updated.getPm());
             d.setDebitPrelevement(updated.getDebitPrelevement());
             d.setPn10Nano(updated.getPn10Nano());
@@ -125,7 +244,7 @@ public class DemandeEssaiService {
             d.setPn23Nano(updated.getPn23Nano());
             d.setFacteurDilutionPN23(updated.getFacteurDilutionPN23());
 
-            // 🟢 Lignes
+            // Lignes
             d.setLigne1(updated.getLigne1());
             d.setPointPrelevementL1(updated.getPointPrelevementL1());
             d.setLigne2(updated.getLigne2());
@@ -133,20 +252,21 @@ public class DemandeEssaiService {
             d.setLigne3(updated.getLigne3());
             d.setPointPrelevementL3(updated.getPointPrelevementL3());
 
-            // 🟢 QCL / PN
+            // Microsot / QCL
+            d.setMicrosot(updated.getMicrosot());
+            d.setPointPrelevementMicrosot(updated.getPointPrelevementMicrosot());
+
             d.setQcl1(updated.getQcl1());
             d.setPointPrelevementQCL1(updated.getPointPrelevementQCL1());
             d.setQcl2(updated.getQcl2());
             d.setPointPrelevementQCL2(updated.getPointPrelevementQCL2());
 
-            d.setPn1(updated.getPn1());
-            d.setPointPrelevementPN1(updated.getPointPrelevementPN1());
-            d.setPn2(updated.getPn2());
-            d.setPointPrelevementPN2(updated.getPointPrelevementPN2());
+            d.setFITR(updated.getFITR());
+            d.setPointPrelevementFITR(updated.getPointPrelevementFITR());
 
-            // 🟢 ECU
             d.setEgr(updated.getEgr());
-            d.setMicrosot(updated.getMicrosot());
+
+            // ECU
             d.setXcu1(updated.getXcu1());
             d.setSoftware1(updated.getSoftware1());
             d.setCalibration1(updated.getCalibration1());
@@ -160,31 +280,192 @@ public class DemandeEssaiService {
             d.setSoftware3(updated.getSoftware3());
             d.setCalibration3(updated.getCalibration3());
 
-            // 🟢 Acquisition
+            // Acquisition
             d.setAcquisitionEOBD(updated.getAcquisitionEOBD());
             d.setTypeAcquisition(updated.getTypeAcquisition());
+
+            // Mesure courant
             d.setMesureCourant(updated.getMesureCourant());
             d.setIndiceCourant(updated.getIndiceCourant());
             d.setNumeroTermocoupleCourant(updated.getNumeroTermocoupleCourant());
+            d.setTypeMesureCourant(updated.getTypeMesureCourant());
 
+            // Capot / soufflante
+            d.setCapot(updated.getCapot());
+            d.setSoufflante(updated.getSoufflante());
+
+            // CVS
+            d.setQCvs(updated.getQCvs());
+            d.setCarflow(updated.getCarflow());
+
+            // Mesure tension
             d.setMesureTension(updated.getMesureTension());
             d.setIndiceTension(updated.getIndiceTension());
             d.setNumeroTermocoupleTension(updated.getNumeroTermocoupleTension());
             d.setTypeMesureTension(updated.getTypeMesureTension());
 
+            // Thermocouples
             d.setThermocouples(updated.getThermocouples());
-            d.setSondeLambdaLA4(updated.getSondeLambdaLA4());
+            d.setIndicethermocouples(updated.getIndicethermocouples());
+            d.setNumeroTermocouple(updated.getNumeroTermocouple());
+            d.setTypeMesurethermocouples(updated.getTypeMesurethermocouples());
 
-            return repository.save(d);
+            // Sonde Lambda
+            d.setSondeLambdaLA4(updated.getSondeLambdaLA4());
+            d.setIndicesondeLambdaLA4(updated.getIndicesondeLambdaLA4());
+            d.setNumerosondeLambdaLA4(updated.getNumerosondeLambdaLA4());
+            d.setTypeMesuresondeLambdaLA4(updated.getTypeMesuresondeLambdaLA4());
+
+            return demandRepository.save(updated);
 
         }).orElseThrow(() -> new RuntimeException("Demande non trouvée avec id : " + id));
     }
-
     // ------------------ DELETE ------------------
     public void deleteDemande(Long id) {
         checkCharge();
-        repository.deleteById(id);
+        demandRepository.deleteById(id);
+    }
+    public DemandeEssai duplicateDemande(Long id) {
+
+        checkCharge();
+
+        DemandeEssai original = demandRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+
+        DemandeEssai copy = new DemandeEssai();
+
+        // copier toutes les propriétés sauf l'id
+        BeanUtils.copyProperties(original, copy, "id");
+
+        // Optionnel : modifier certaines valeurs pour la nouvelle demande
+        copy.setStatutGlobal(StatutGlobal.PAS_FAIT);
+
+        return demandRepository.save(copy);
+    }
+    public  void mettreAJourStatut(Long demandeId) {
+
+        DemandeEssai demande = demandRepository.findById(demandeId)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+
+        boolean validationTech =
+                validationTechnicienRepo.existsByDemandeEssaiId(demandeId);
+
+        boolean validationCharge =
+                validationChargeRepo.existsByDemandeEssaiId(demandeId);
+
+        if (validationTech && validationCharge) {
+            demande.setStatutGlobal(StatutGlobal.FAIT);
+        }
+        else if (validationTech || validationCharge) {
+            demande.setStatutGlobal(StatutGlobal.EN_COURS);
+        }
+        else {
+            demande.setStatutGlobal(StatutGlobal.PAS_FAIT);
+        }
+
+        demandRepository.save(demande);
+    }
+    public Map<String, Long> countDemandesByStatut() {
+
+        long fait = demandRepository.countByStatutGlobal(StatutGlobal.FAIT);
+        long encours = demandRepository.countByStatutGlobal(StatutGlobal.EN_COURS);
+        long pasFait = demandRepository.countByStatutGlobal(StatutGlobal.PAS_FAIT);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("fait", fait);
+        stats.put("encours", encours);
+        stats.put("pasFait", pasFait);
+
+        return stats;
+    }
+
+    public List<Map<String, Object>> evolutionEssais12Mois() {
+        int year = LocalDate.now().getYear();
+
+        List<Object[]> results = demandRepository.countByMonthAndStatut(year);
+
+        Map<Integer, Map<String, Object>> data = new HashMap<>();
+
+        String[] mois = {"Jan","Fév","Mars","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"};
+
+        // initialisation
+        for (int i = 1; i <= 12; i++) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("month", mois[i-1]);
+            m.put("Fait", 0);
+            m.put("Pas_fait", 0);
+            m.put("En_cours", 0);
+            data.put(i, m);
+        }
+        for (Object[] r : results) {
+
+            int month = (Integer) r[0];
+            StatutGlobal statut = (StatutGlobal) r[1];
+            Long count = (Long) r[2];
+
+            Map<String, Object> m = data.get(month);
+
+            if (statut == StatutGlobal.FAIT) {
+                m.put("Fait", count);
+            }
+            else if (statut == StatutGlobal.PAS_FAIT) {
+                m.put("Pas_fait", count);
+            }
+            else if (statut == StatutGlobal.EN_COURS) {
+                m.put("En_cours", count);
+            }
+        }
+        return new ArrayList<>(data.values());
     }
 
 
+    public List<Map<String, Object>> evolutionEssaisParSemaine(int month) {
+        int year = LocalDate.now().getYear();
+        List<Object[]> results = demandRepository.countByWeekAndStatut(year, month);
+        List<Map<String, Object>> weeks = new ArrayList<>();
+        // Initialisation S1-S4
+        for (int i = 1; i <= 4; i++) {
+            Map<String, Object> w = new HashMap<>();
+            w.put("week", "S" + i);
+            w.put("Fait", 0);
+            w.put("Pas_fait", 0);
+            w.put("En_cours", 0);
+            weeks.add(w);
+        }
+        for (Object[] r : results) {
+            int week = (Integer) r[0];
+            StatutGlobal statut = (StatutGlobal) r[1];
+            Long count = (Long) r[2];
+            int index = (week % 4); // transforme week DB → S1..S4
+            Map<String, Object> w = weeks.get(index);
+            if (statut == StatutGlobal.FAIT) {
+                w.put("Fait", count);
+            }
+            else if (statut == StatutGlobal.PAS_FAIT) {
+                w.put("Pas_fait", count);
+            }
+            else if (statut == StatutGlobal.EN_COURS) {
+                w.put("En_cours", count);
+            }
+        }
+        return weeks;
+    }
+    public long getTotalDemandes() {
+        return demandRepository.count();
+    }
+
+    // Nombre d'essais planifiés aujourd'hui
+    public long getNombreEssaisAujourdHui() {
+        LocalDate today = LocalDate.now();
+        return demandRepository.countByDatePlanification(today);
+    }
+
+    public List<DemandeEssai> getAllDemandeClient() {
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client = currentUser.getClient();
+
+        return demandRepository.findByClient(client);
+    }
 }

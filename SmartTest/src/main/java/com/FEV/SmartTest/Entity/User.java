@@ -1,12 +1,13 @@
 package com.FEV.SmartTest.Entity;
 
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Enum.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import org.hibernate.annotations.processing.Pattern;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,13 +23,20 @@ public class User {
 
     private String nom;
     private String prenom;
-    private String email;
+    @Column(unique = true)
+    private String  email;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    private Client client;
+
     private String motDePasse;
+
     private String numeroTelephone;
+
+    @Column(columnDefinition = "TEXT")
     private String image;
 }
 

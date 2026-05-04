@@ -1,6 +1,5 @@
-package com.FEV.SmartTest.Filter;
+package com.FEV.SmartTest.Configuration;
 
-import com.FEV.SmartTest.Configuration.JwtUtils;
 import com.FEV.SmartTest.Service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,9 +23,18 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // ⚡ Ignorer les endpoints publics
+        if (path.startsWith("/api/auth") ) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String authHeader = request.getHeader("Authorization");
         String username = null;
         String jwt = null;
 
@@ -37,8 +45,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-
-            // ⚡ Utiliser l'objet userDetails et non la classe UserDetails
             if (jwtUtils.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

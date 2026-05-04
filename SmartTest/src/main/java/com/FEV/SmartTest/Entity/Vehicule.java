@@ -1,8 +1,6 @@
 package com.FEV.SmartTest.Entity;
 
-import com.FEV.SmartTest.Enum.ModeConduite;
-import com.FEV.SmartTest.Enum.TypeCarburant;
-import com.FEV.SmartTest.Enum.TypeMotorisation;
+import com.FEV.SmartTest.Enum.*;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,11 +20,18 @@ public class Vehicule {
     private Long id;
 
     private String nomAppliImmat;
+    private String identificateur;
     private String immatriculation;
+    private String marque ;
     private String vin;
     private String site;
     private String responsable;
-    private String localisation;
+
+    @Enumerated(EnumType.STRING)
+    private Localisation localisation;
+
+    @Enumerated(EnumType.STRING)
+    private Client client;
 
     @Enumerated(EnumType.STRING)
     private TypeMotorisation motorisation;
@@ -37,8 +42,6 @@ public class Vehicule {
     @Enumerated(EnumType.STRING)
     private TypeCarburant carburant;
 
-    private String couleur;
-    private String familleVehicule;
 
     @Enumerated(EnumType.STRING)
     private ModeConduite modeConduite;
@@ -48,6 +51,10 @@ public class Vehicule {
     private Float puissance;
     private Float densite;
     private Float empattement;
-    private String typeCatalyseur;
+    private String couleur;
+    private String familleVehicule;
+
+    @Enumerated(EnumType.STRING)
+    private Type_catalyseur typeCatalyseur;
 
 }

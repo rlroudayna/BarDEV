@@ -4,5 +4,6 @@ public enum TypeEssai {
     TIRE_MACERATION,
     PRECON,
     CALAGE,
-    ROULAGE
+    ROULAGE,
+    TIR_CHAUD,
 }
