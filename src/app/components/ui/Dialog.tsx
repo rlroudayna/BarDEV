@@ -38,7 +38,7 @@ export function DialogContent({
       />
 
       <DialogPrimitive.Content
-        className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl p-6 z-50 border border-gray-100 outline-none ${className}`}
+  className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card text-foreground rounded-xl shadow-xl p-6 z-50 border border-border outline-none ${className}`}
         {...props}
       >
         {children}

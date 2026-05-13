@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "../components/ui/Dialog";
 
-
 import { toast } from "sonner";
 
 // Mock Data basée sur votre classe Utilisateur
@@ -63,7 +62,6 @@ export function Users() {
   const [clientFilter, setClientFilter] = useState("Tous");
   const [showModal, setShowModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const clients = ["RENAULT", "STELLANTIS", "FEV"];
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -195,30 +193,34 @@ export function Users() {
     <div className="space-y-5 p-3">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-black mb-2 text-left">
+        <h1
+          className="text-3xl font-semibold text-foreground
+ mb-2 text-left"
+        >
           Gestion des Utilisateurs
         </h1>
-        <p className="text-gray-600 text-left">
+        <p className="text-muted-foreground text-left">
           Administrez les comptes et les accès de la plateforme
         </p>
       </div>
       {/* Barre de recherche et filtres */}
-      <div className="p-5 bg-white rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
+      <div className="p-5 bg-card rounded-xl   border border-border
+ shadow-sm flex items-center gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-400" />
           <input
             type="text"
             placeholder="Rechercher par nom ,email"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="w-full h-11 pl-10 pr-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 "
+            className="w-full h-11 pl-10 pr-4 bg-card text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
 
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
-          className="w-48 h-11 px-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E30613]/30"
+          className="w-48 h-11 px-4 bg-card text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
           <option value="Tous">Tous les clients</option>
 
@@ -229,7 +231,7 @@ export function Users() {
           ))}
         </select>
         <select
-          className="w-48 h-11 px-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E30613]/30"
+          className="w-48 h-11 px-4 bg-card text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
         >
@@ -255,24 +257,22 @@ export function Users() {
         </button>
       </div>
       {/* Tableau des utilisateurs */}
-      <div className="bg-white rounded-xl border border-gray-250 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-x-auto">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm text-left">
+          <table className="w-full min-w-[800px] text-sm text-left border-collapse">
             {/* Header */}
-            <thead className=" px-4 py-10 bg-[#F1F5F9] border-b border-gray-300">
+            <thead className="bg-[#B9032C] border-b border-gray-400">
               <tr>
-                <th className="px-8 py-4 font-semibold text-gray-600">
+                <th className="px-8 py-5 font-semibold text-white">
                   Utilisateur
                 </th>
-                <th className="px-9 py-4 font-semibold text-gray-600">Rôle</th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  Client
-                </th>
-                <th className="px-8 py-4 font-semibold text-gray-600">Email</th>
-                <th className="px-8 py-4 font-semibold text-gray-600">
+                <th className="px-9 py-5 font-semibold text-white">Rôle</th>
+                <th className="px-4 py-5 font-semibold text-white">Client</th>
+                <th className="px-8 py-5 font-semibold text-white">Email</th>
+                <th className="px-8 py-5 font-semibold text-white">
                   Téléphone
                 </th>
-                <th className="px-8 py-4 text-right font-semibold text-gray-600">
+                <th className="px-8 py-5 text-right font-semibold text-white">
                   Actions
                 </th>
               </tr>
@@ -283,54 +283,55 @@ export function Users() {
               {filteredUsers.map((user) => (
                 <tr
                   key={user.id}
-                  className="border-b border-gray-100 hover:bg-[#F9FBFD] transition-colors group"
+                  className="border-b border-gray-200 hover:bg-[#E30613]/3 transition-colors"
                 >
                   {/* Colonne Identité avec Avatar */}
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div>
-                        <div className="font-bold text-gray-800">
+                        <div className="font-bold  text-muted-foreground-800">
                           {user.prenom} {user.nom}
                         </div>
-                        <div className="text-xs text-gray-400 font-normal"></div>
+                        <div className="text-xs text-muted-foreground font-normal"></div>
                       </div>
                     </div>
                   </td>
 
                   {/* Colonne Rôle avec Badge */}
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-3">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        roleColors[user.role] || "bg-gray-100 text-gray-600"
+                        roleColors[user.role] ||
+                        "bg-gray-100  text-muted-foreground-800"
                       }`}
                     >
                       {user.role}
                     </span>
                   </td>
                   {/* Colonne client */}
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-5 py-3  text-muted-foreground-800">
                     <div className="flex items-center gap-2">{user.client}</div>
                   </td>
 
                   {/* Colonne Email */}
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-5 py-3 text-muted-foreground-800">
                     <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
+                      <Mail className="w-4 h-4 text-red-300" />
                       {user.email}
                     </div>
                   </td>
 
                   {/* Colonne Téléphone */}
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-5 py-3  text-muted-foreground-800">
                     <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
+                      <Phone className="w-4 h-4 text-red-300" />
                       {user.numeroTelephone || "—"}
                     </div>
                   </td>
 
                   {/* Colonne Actions */}
                   {/* Actions */}
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Eye
                         className="cursor-pointer w-4 h-4 text-blue-500"
@@ -375,7 +376,6 @@ export function Users() {
                           className="cursor-pointer w-4 h-4 text-red-600"
                           onClick={() => {
                             setSelectedUser(user);
-                            setShowDeleteModal(true);
                             setShowConfirmDelete(true);
                           }}
                         />
@@ -390,7 +390,7 @@ export function Users() {
 
         {/* Message si aucun résultat */}
         {filteredUsers.length === 0 && (
-          <div className="p-10 text-center text-gray-500">
+          <div className="p-10 text-center text-muted-foreground-500">
             Aucun utilisateur ne correspond à votre recherche.
           </div>
         )}
@@ -401,7 +401,7 @@ export function Users() {
           <DialogHeader>
             <DialogTitle>Confirmation de suppression</DialogTitle>
           </DialogHeader>
-          <p className="py-4 text-gray-700">
+          <p className="py-4 text-muted-foreground-700">
             Voulez-vous vraiment supprimer le véhicule{" "}
             <span className="font-bold">{selectedUser?.nom}</span> ?
           </p>
@@ -430,16 +430,17 @@ export function Users() {
       {/* Modal d'ajout */}
       {/* ================= USER FORM MODAL ================= */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-[400px] max-h-[95vh]">
+        <DialogContent className="max-w-[400px] max-h-[95vh] bg-card text-foreground border border-border">
+          {" "}
           {/* HEADER */}
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-800 border-b pb-1">
+            <DialogTitle className="text-2xl font-semibold text-foreground border-b border-border pb-2">
+              {" "}
               {modalMode === "add" && "Ajouter un utilisateur"}
               {modalMode === "edit" && "Modifier un utilisateur"}
               {modalMode === "view" && "Détails utilisateur"}
             </DialogTitle>
           </DialogHeader>
-
           {/* FORMULAIRE UNIQUE */}
           <form onSubmit={handleSubmit} className="space-y-2 mt-6">
             {/* GRID */}
@@ -599,13 +600,13 @@ export function Users() {
       </Dialog>
 
       {/* ================= DELETE CONFIRMATION MODAL ================= */}
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+      <Dialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmation de suppression</DialogTitle>
           </DialogHeader>
 
-          <p className="py-4 text-gray-700">
+          <p className="py-4 text-muted-foreground-700">
             Voulez-vous supprimer l'utilisateur{" "}
             <span className="font-bold">
               {selectedUser?.prenom} {selectedUser?.nom}
@@ -615,7 +616,7 @@ export function Users() {
 
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowDeleteModal(false)}
+              onClick={() => setShowConfirmDelete(false)}
               className="px-4 py-2 border rounded-lg"
             >
               Annuler
@@ -626,7 +627,7 @@ export function Users() {
                 if (!selectedUser) return;
 
                 setUsers(users.filter((u) => u.id !== selectedUser.id));
-                setShowDeleteModal(false);
+                setShowConfirmDelete(false);
                 setSelectedUser(null);
               }}
               className="px-4 py-2 bg-red-600 text-white rounded-lg"

@@ -6,11 +6,22 @@ export function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Ici, vous appellerez votre API pour envoyer l'email
-    console.log("Demande de réinitialisation pour:", email);
-    setIsSubmitted(true);
+
+    try {
+      await fetch("http://localhost:8080/api/users/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      setIsSubmitted(true);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Erreur lors de l'envoi de l'email");
+    }
   };
 
   return (
@@ -23,14 +34,11 @@ export function ForgotPassword() {
                 Mot de passe oublié ?
               </h2>
               <p className="text-gray-600 mb-6 text-sm">
-                Entrez votre adresse email. Nous vous enverrons
-                un lien pour réinitialiser votre mot de passe.
+                Entrez votre adresse email. Nous vous enverrons un lien pour
+                réinitialiser votre mot de passe.
               </p>
 
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-6"
-              >
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Email
@@ -64,9 +72,8 @@ export function ForgotPassword() {
                 Email envoyé !
               </h2>
               <p className="text-gray-600 mb-6 text-sm">
-                Si un compte existe pour{" "}
-                <strong>{email}</strong>, vous recevrez un email
-                sous peu.
+                Si un compte existe pour <strong>{email}</strong>, vous recevrez
+                un email sous peu.
               </p>
               <button
                 onClick={() => setIsSubmitted(false)}

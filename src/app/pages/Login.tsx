@@ -1,13 +1,13 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { images } from "../../assets";
-import { Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
-
+import { Mail, Lock, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
-const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -88,18 +88,27 @@ const [error, setError] = useState<string | null>(null);
                   Mot de passe <span className="text-[#E30613]">*</span>
                 </label>
               </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={motDePasse}
+                  onChange={(e) => setMotDePasse(e.target.value)}
+                  required
+                  className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-[#E30613]/20 focus:border-[#E30613] transition-all"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#E30613]"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
 
-              <input
-                type="password"
-                value={motDePasse}
-                onChange={(e) => setMotDePasse(e.target.value)}
-                required
-                className="w-full h-12 px-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E30613]/20 focus:border-[#E30613] transition-all"
-                placeholder="••••••••"
-              />
               <Link
                 to="/forgot-password"
-                className="text-xs font-medium text-center text-gray-500 hover:text-[#E30613] transition-colors"
+                className="text-xs font-medium text-gray-500 hover:text-[#E30613] transition-colors"
               >
                 Mot de passe oublié ?
               </Link>
@@ -112,7 +121,7 @@ const [error, setError] = useState<string | null>(null);
             </div>{" "}
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#c40510] text-white rounded-xl font-bold text-lg hover:bg-[#E30613] active:scale-[0.98] transition-all shadow-lg shadow-red-200 mt-4"
+              className="w-full py-3.5 bg-[#c40510] text-white rounded-xl font-bold text-lg hover:bg-[#E30613] active:scale-[0.98] transition-all shadow-lg shadow-red-200 mt-1"
             >
               Se connecter
             </button>

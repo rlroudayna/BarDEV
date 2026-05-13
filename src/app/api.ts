@@ -25,7 +25,10 @@ export async function authFetch(endpoint: string, options: any = {}) {
 
   if (!res.ok) {
     // Si data est un objet JSON, essaye data.message, sinon prends le texte brut
-    const errorMessage = typeof data === "string" ? data : data?.message || "Erreur serveur";
+    const errorMessage =
+      typeof data === "string"
+        ? data
+        : data?.message || data?.error || "Erreur serveur";
     throw new Error(errorMessage);
   }
 

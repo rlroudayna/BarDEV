@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router";
 import {
   Home,
@@ -16,18 +16,40 @@ import {
   LogOut,
   ChevronLeft,
   MenuIcon,
+  ChevronRight,
+  Power,
 } from "lucide-react";
-import {
-  Menu,
-  MenuButton,
-  MenuItems,
-  MenuItem,
-} from "@headlessui/react";
+import { toggleTheme } from "../../styles/theme"; ;
+import { Moon, Sun } from "lucide-react";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { images } from "../../assets";
-
+import { authFetch } from "../api";
+import { DoorOpen } from "lucide-react";
+export enum Client {
+  RENAULT = "RENAULT",
+  STELLANTIS = "STELLANTIS",
+  FEV = "FEV",
+}
+export enum Role {
+  ADMIN = "ADMIN",
+  CHARGE_ESSAI = "CHARGE_ESSAI",
+  TECHNICIEN_ESSAI = "TECHNICIEN_ESSAI",
+  EXTERNE = "EXTERNE",
+}
+interface User {
+  id?: number;
+  nom: string;
+  prenom: string;
+  client: Client;
+  email: string;
+  role: Role;
+  numeroTelephone?: string;
+  motDePasse?: string;
+  image?: string;
+}
 const navigation = [
   { name: "Dashboard", path: "/app", icon: Home, end: true },
-  { name: "Utilisateurs", path: "/app/users", icon: Users },
+  { name: "Utilisateurs", path: "/app/users", icon: Users, role: Role.ADMIN },
   { name: "Véhicules", path: "/app/vehicules", icon: Car },
   {
     name: "Lois de route",
@@ -54,11 +76,29 @@ export function Layout() {
   const navigate = useNavigate();
   // État pour gérer si la barre est réduite ou non
   const [isCollapsed, setIsCollapsed] = useState(false);
-
   const handleLogout = () => {
+    localStorage.clear(); // supprime tout (simple et efficace)
     navigate("/login");
   };
 
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      authFetch("/users/me")
+        .then((data) => {
+          console.log("USER:", data);
+          setUser(data);
+        })
+        .catch((err) => console.error(err));
+    }
+  }, []);
+  const filteredNavigation = navigation.filter((item) => {
+    if (!item.role) return true;
+    if (!user) return false;
+    return item.role === user.role;
+  });
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar avec largeur dynamique */}
@@ -72,36 +112,38 @@ export function Layout() {
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="hover:bg-[#E30613]/30 rounded-lg ml-auto px-4"
         >
-          {isCollapsed ? (
-            <MenuIcon size={20} />
-          ) : (
-            <ChevronLeft size={22} />
-          )}
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={22} />}
         </button>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 mt-4">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.path === "/app"} // seulement le Dashboard
+                end={item.path === "/app"}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
-                    isActive
-                      ? "bg-white/13 border-l-4 border-white" // actif légèrement clair
-                      : "hover:bg-white/10"
-                  }${isCollapsed ? "justify-center px-0" : ""}`
+                    isActive ? "bg-white text-[#B3002B]" : "text-white"
+                  } ${isCollapsed ? "justify-center px-0" : ""}`
                 }
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                {/* On cache le texte si réduit */}
-                {!isCollapsed && (
-                  <span className="whitespace-nowrap overflow-hidden">
-                    {item.name}
-                  </span>
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        isActive ? "text-[#B3002B]" : "text-white"
+                      }`}
+                    />
+
+                    {!isCollapsed && (
+                      <span className="whitespace-nowrap overflow-hidden">
+                        {item.name}
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             );
@@ -111,47 +153,37 @@ export function Layout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-14 bg-white border-b border-[#E0E0E0] px-8 py-5 flex items-center justify-between">
+        <header className="h-14  border-b bg-header border-header-border px-8 flex items-center justify-between">
           <div className="flex-1" />
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-800"
+          >
+            <Sun className="hidden dark:block w-5 h-5" />
+            <Moon className="block dark:hidden w-5 h-5" />
+          </button>
+
           <div className="flex items-center gap-4">
-            <Menu
-              as="div"
-              className="relative inline-block text-left"
+            
+            {/* Bouton Profil */}
+            <button
+              onClick={() => navigate("/app/profile")}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100"
             >
-              <MenuButton className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-[#E30613] flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              </MenuButton>
-              <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                <div className="px-1 py-1">
-                  <MenuItem>
-                    {({ focus }) => (
-                      <button
-                        onClick={() => navigate("/app/profile")}
-                        className={`${focus ? "bg-gray-100" : ""} group flex w-full items-center gap-2 rounded-md px-4 py-2 text-sm text-gray-700`}
-                      >
-                        <User className="w-4 h-4" />
-                        Mon profil
-                      </button>
-                    )}
-                  </MenuItem>
-                </div>
-                <div className="px-1 py-1">
-                  <MenuItem>
-                    {({ focus }) => (
-                      <button
-                        onClick={handleLogout}
-                        className={`${focus ? "bg-gray-100" : ""} group flex w-full items-center gap-2 rounded-md px-4 py-2 text-sm text-red-600`}
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Déconnexion
-                      </button>
-                    )}
-                  </MenuItem>
-                </div>
-              </MenuItems>
-            </Menu>
+              <div className="w-8 h-8 rounded-full bg-[#E30613] flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-sm text-muted-foreground-700">
+                {user ? `${user.nom} ${user.prenom}` : "Chargement..."}
+              </span>{" "}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100"
+            >
+              <Power className="w-5 h-5 text-red-600" />
+              <span className="text-sm text-red-600">Déconnexion</span>
+            </button>
           </div>
         </header>
 

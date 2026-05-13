@@ -60,12 +60,14 @@ export function LoisDeRoute() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInertie, setSearchInertie] = useState("");
   const [clientFilter, setClientFilter] = useState("Tous");
-
+  const [role, setRole] = useState<string>("");
+  const canEdit = role?.includes("ADMIN") || role?.includes("CHARGE_ESSAI");
   const clients = ["RENAULT", "STELLANTIS", "FEV"];
+  const [userClient, setUserClient] = useState<string>("");
   const filteredLois = lois.filter((loi) => {
-      const matchNom =
-  searchTerm === "" ||
-  loi.nom?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchNom =
+      searchTerm === "" ||
+      loi.nom?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClient =
       clientFilter === "Tous" || loi.client === clientFilter;
 
@@ -100,6 +102,18 @@ export function LoisDeRoute() {
       console.error(err);
     }
   };
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authFetch("/users/me");
+        setRole(user.role);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUser();
+  }, []);
   const addLois = async (newLois: Lois) => {
     try {
       const created = await authFetch("/lois-route", {
@@ -176,32 +190,56 @@ export function LoisDeRoute() {
       [field]: value,
     }));
   };
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authFetch("/users/me");
+        setRole(user.role);
+        setUserClient(user.client); // 👈 IMPORTANT
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+  useEffect(() => {
+    if (modalMode !== "add") return;
+    if (!newLois.client || !newLois.norme) return;
+
+    const generatedName = `Loi_${newLois.client}_${newLois.norme}`;
+
+    setNewLois((prev) => ({
+      ...prev,
+      nom: generatedName,
+    }));
+  }, [newLois.client, newLois.norme, modalMode]);
   return (
     <div className="space-y-5  p-3">
       <div>
-        <h1 className="text-3xl font-semibold text-black mb-2">
+        <h1 className="text-3xl font-semibold text-foreground mb-2">
           Gestion de lois de route
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground-600">
           Paramétrer les lois de simulation des efforts routiers
         </p>
       </div>
 
-      <div className="p-5 bg-white rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
+      <div className="p-5 bg-card rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
         {/* Recherche nom */}
         <div className="flex-1 relative ">
-          <Search className="absolute  bg-white left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute  bg-card left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-400" />
 
           <input
             type="text"
             placeholder="Rechercher par nom"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-11 pl-10 pr-4 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#0288D1]"
+            className="w-full h-11 pl-10 pr-4 bg-background border border-border text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring transition"
           />
         </div>
         {/*<select
-          className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+          className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-muted-foreground-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
         >
@@ -210,73 +248,127 @@ export function LoisDeRoute() {
           <option value="STELLANTIS">STELLANTIS</option>
           <option value="FEV">FEV</option>
         </select>*/}
-
+        {role?.includes("ADMIN") && (
+          <select
+            className="w-full sm:w-48 h-12 px-4 bg-background border border-border rounded-lg shadow-sm text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition"
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+          >
+            <option value="Tous">Client (Tous)</option>
+            <option value="RENAULT">RENAULT</option>
+            <option value="STELLANTIS">STELLANTIS</option>
+            <option value="FEV">FEV</option>
+          </select>
+        )}
         {/* Recherche inertie */}
         <div className="w-64 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-400" />
 
           <input
             type="number"
             placeholder="Rechercher par inertie"
             value={searchInertie}
             onChange={(e) => setSearchInertie(e.target.value)}
-            className="w-62 h-11 px-8 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 "
+            className="w-60 h-11 px-8 bg-card text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring transition"
           />
         </div>
 
         {/* Bouton */}
         {/* Bouton Ajouter */}
-        <button
-          onClick={() => {
-            setNewLois(INITIAL_LOIS); // <--- On vide le formulaire ici
-            setModalMode("add"); // <--- On s'assure d'être en mode ajout
-            setShowModal(true);
-          }}
-          className="h-11 px-6 bg-[#E30613] text-white rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-md"
-        >
-          <Plus className="w-5 h-5" />
-          Ajouter une loi de route
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => {
+              setNewLois(INITIAL_LOIS); // <--- On vide le formulaire ici
+              setModalMode("add"); // <--- On s'assure d'être en mode ajout
+              setShowModal(true);
+            }}
+            className="h-11 px-6 bg-[#E30613] text-white rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            Ajouter une loi de route
+          </button>
+        )}
       </div>
       {/* Tableau des lois */}
-      <div className="bg-white rounded-xl border border-gray-250 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-x-auto">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm text-left">
+          <table className="w-full min-w-[800px] text-sm text-left border-collapse">
             {/* Header */}
-            <thead className="bg-[#F1F5F9] border-b border-gray-300">
+            <thead className="bg-[#E30613] border-b border-gray-400">
               <tr>
-                <th className="px-8 py-4 font-semibold text-gray-600">
-                  Nom de la loi
+                <th className="px-3 py-3 font-semibold text-white whitespace-nowrap">
+                  Nom du loi
                 </th>
-                <th className="px-6 py-4 font-semibold text-gray-600">
+
+                <th className="px-4 py-3 font-semibold text-white whitespace-nowrap">
                   Client
                 </th>
 
-                <th className="px-3 py-4 font-semibold text-gray-600">Norme</th>
-                <th className="px-5 py-4 font-semibold text-gray-600">
-                  Temperature(°C)
-                </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  Inertie(kg)
-                </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  Masse d’essai(kg)
-                </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  Inertie TNR(kg)
-                </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  Inertie 2T(kg)
+                <th className="px-2 py-3 font-semibold text-white whitespace-nowrap">
+                  Norme
                 </th>
 
-                <th className="px-3 py-4 font-semibold text-gray-600">F0(N)</th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  F1(N/km/h){" "}
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>Température</span>
+                    <span className="text-xs font-normal opacity-80">(°C)</span>
+                  </div>
                 </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
-                  F2(N/(km/h)²)
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>Inertie</span>
+                    <span className="text-xs font-normal opacity-80">(kg)</span>
+                  </div>
                 </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>Masse d’essai</span>
+                    <span className="text-xs font-normal opacity-80">(kg)</span>
+                  </div>
+                </th>
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>Inertie TNR</span>
+                    <span className="text-xs font-normal opacity-80">(kg)</span>
+                  </div>
+                </th>
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>Inertie 2T</span>
+                    <span className="text-xs font-normal opacity-80">(kg)</span>
+                  </div>
+                </th>
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>F0</span>
+                    <span className="text-xs font-normal opacity-80">(N)</span>
+                  </div>
+                </th>
+
+                <th className="px-2 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>F1</span>
+                    <span className="text-xs font-normal opacity-80">
+                      (N/km/h)
+                    </span>
+                  </div>
+                </th>
+
+                <th className="px-1 py-3 font-semibold text-white text-center">
+                  <div className="flex flex-col leading-tight">
+                    <span>F2</span>
+                    <span className="text-xs font-normal opacity-80">
+                      (N/(km/h)²)
+                    </span>
+                  </div>
+                </th>
+
+                <th className="px-8 py-3 font-semibold text-white whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -286,40 +378,48 @@ export function LoisDeRoute() {
               {filteredLois.map((loi) => (
                 <tr
                   key={loi.id}
-                  className="border-b border-gray-100 hover:bg-[#F9FBFD] transition-colors group"
+                  className="border-b border-gray-200 hover:bg-[#E30613]/3 transition-colors"
                 >
                   {/* Nom - truncate pour éviter de casser la ligne si le nom est trop long */}
-                  <td className="px-5 py-4 text-gray-800 font-bold ">
+                  <td className="px-5 py-3 text-muted-foreground-800 font-bold ">
                     {loi.nom}
                   </td>
-                  <td className="px-5 py-4 text-gray-600">{loi.client}</td>
+                  <td className="px-2 py-3 text-muted-foreground-800">
+                    {loi.client}
+                  </td>
 
-                  <td className="px-2 py-4">
-                    <span className="px-2 py-1 bg-[#E8F5E9] text-[#2E7D32] rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <td className="px-2 py-3S">
+                    <span className="px-2 py-2 bg-[#E8F5E9] text-[#2E7D32] rounded-full text-[10px] font-bold uppercase tracking-wider">
                       {loi.norme}
                     </span>
                   </td>
 
-                  <td className="px-10 py-4 text-gray-600">
+                  <td className="px-12 py-3 text-muted-foreground-800">
                     {loi.temperature}
                   </td>
 
                   {/* Valeurs numériques - réduction des paddings pour gagner de la place */}
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-6 py-3 text-muted-foreground-800">
                     {loi.inertieKg}
                   </td>
-                  <td className="px-4 py-4 text-gray-600">
+                  <td className="px-12 py-3 text-muted-foreground-800">
                     {loi.masseEssaiKg}
                   </td>
-                  <td className="px-4 py-4 text-gray-600">
-                    {loi.inertieRotativeTNRKg} 
+                  <td className="px-10 py-3 text-muted-foreground-800">
+                    {loi.inertieRotativeTNRKg}
                   </td>
-                  <td className="px-4 py-4 text-gray-600">
+                  <td className="px-8 py-3 text-muted-foreground-800">
                     {loi.inertieRotativeDeuxTrainsKg}
                   </td>
-                  <td className="px-3 py-4 text-gray-600">{loi.f0}</td>
-                  <td className="px-4 py-4 text-gray-600">{loi.f1}</td>
-                  <td className="px-4 py-4 text-gray-600">{loi.f2}</td>
+                  <td className="px-3 py-3 text-muted-foreground-800">
+                    {loi.f0}
+                  </td>
+                  <td className="px-8 py-3 text-muted-foreground-800">
+                    {loi.f1}
+                  </td>
+                  <td className="px-8 py-3 text-muted-foreground-800">
+                    {loi.f2}
+                  </td>
 
                   {/* On active le mode transparent ici */}
                   <Dialog
@@ -331,7 +431,7 @@ export function LoisDeRoute() {
                       <DialogHeader>
                         <DialogTitle>Confirmation de suppression</DialogTitle>
                       </DialogHeader>
-                      <p className="py-4 text-gray-700">
+                      <p className="py-4 text-muted-foreground-700">
                         Voulez-vous vraiment supprimer le véhicule{" "}
                         <span className="font-bold">{selectedLois?.nom}</span> ?
                       </p>
@@ -359,34 +459,46 @@ export function LoisDeRoute() {
                   </Dialog>
                   {/* Actions */}
                   {/* Actions */}
-                  <td className="px-4 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Eye
-                        className="cursor-pointer w-4 h-4 text-blue-600"
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      {/* Voir : tout le monde */}
+
+                      {/* Actions seulement ADMIN ou CHARGE_ESSAI */}
+                      {canEdit && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setSelectedLois(loi);
+                              setNewLois(loi);
+                              setModalMode("edit");
+                              setShowModal(true);
+                            }}
+                            className="p-1 rounded-lg bg-green-100 hover:bg-green-200"
+                          >
+                            <Edit className="w-4 h-4 text-green-700" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setLoisToDelete(loi);
+                              setShowConfirmDelete(true);
+                            }}
+                            className="p-1 rounded-lg bg-red-100 hover:bg-red-200"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-700" />
+                          </button>
+                        </>
+                      )}
+                      <button
                         onClick={() => {
                           setSelectedLois(loi);
                           setNewLois(loi);
                           setModalMode("view");
                           setShowModal(true);
                         }}
-                      />
-                      <Edit
-                        className="cursor-pointer w-4 h-4 text-green-600"
-                        onClick={() => {
-                          setSelectedLois(loi);
-                          setNewLois(loi);
-                          setModalMode("edit");
-                          setShowModal(true);
-                        }}
-                      />
-                      <button className="p-1.5 hover:bg-red-50 rounded-lg transition text-red-600 hover:text-red-800">
-                        <Trash2
-                          className="cursor-pointer w-4 h-4 text-red-600"
-                          onClick={() => {
-                            setSelectedLois(loi);
-                            setShowConfirmDelete(true);
-                          }}
-                        />
+                        className="p-1 rounded-lg bg-blue-100 hover:bg-blue-200"
+                      >
+                        <Eye className="w-4 h-4 text-blue-700" />
                       </button>
                     </div>
                   </td>
@@ -395,7 +507,10 @@ export function LoisDeRoute() {
               {/* Aucun résultat */}
               {filteredLois.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-gray-400">
+                  <td
+                    colSpan={9}
+                    className="text-center py-10 text-muted-foreground-400"
+                  >
                     Aucune loi trouvée
                   </td>
                 </tr>
@@ -406,10 +521,10 @@ export function LoisDeRoute() {
 
         {showModal && (
           <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white w-full max-w-[500px] max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
+            <div className="bg-card w-full max-w-[500px] max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
               {/* HEADER */}
-              <div className="px-6 py-3.5 border-b border-slate-300 flex justify-between items-center bg-white">
-                <h2 className="text-xl font-semibold text-gray-800">
+              <div className="px-6 py-3.5 border-b border-slate-300 flex justify-between items-center bg-card">
+                <h2 className="text-xl font-semibold text-muted-foreground-800">
                   {modalMode === "add" && "Ajouter une loi de route"}
                   {modalMode === "edit" && "Modifier la loi de route"}
                   {modalMode === "view" && "Détails de la loi de route"}
@@ -427,12 +542,12 @@ export function LoisDeRoute() {
 
               <form
                 onSubmit={handleSubmit}
-                className="overflow-y-auto p-6 space-y-6 bg-white"
+                className="overflow-y-auto p-6 space-y-6 bg-card"
               >
                 {" "}
                 {/* SECTION 1: Identification */}
                 <section className="">
-                  <div className="flex items-center gap-2 mb-6">
+                  <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-semibold text-[#E30613] uppercase text-sm tracking-wider">
                       {" "}
                       Identification
@@ -445,19 +560,20 @@ export function LoisDeRoute() {
                         label: "Nom de la loi",
                         type: "text",
                         required: true,
-                        placeholder: "ex: Loi  A1",
+                        placeholder: "Loi_Client_Norme",
+                        disabled: true,
                         field: "nom",
                       },
                       {
                         label: "Température (°C)",
                         type: "number",
                         required: true,
-                        placeholder: "23",
+
                         field: "temperature",
                       },
                     ].map((field, i) => (
                       <div key={i} className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-gray-530">
+                        <label className="text-xs font-medium text-muted-foreground-530">
                           {field.label}
                           {field.required && (
                             <span className="text-red-500 ml-1">*</span>
@@ -467,7 +583,7 @@ export function LoisDeRoute() {
                         <input
                           type={field.type}
                           placeholder={field.placeholder}
-                          disabled={isReadOnly}
+                          disabled={field.field === "nom" || isReadOnly}
                           required={field.required} // ✅ IMPORTANT
                           value={(newLois as any)[field.field]}
                           onChange={(e) =>
@@ -478,41 +594,28 @@ export function LoisDeRoute() {
                                 : e.target.value,
                             )
                           }
-                          className="h-11 px-4 border border-gray-300 rounded-lg
-      focus:ring-2 focus:ring-[#E30613]/30 transition-all outline-none"
+                          className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                         />
                       </div>
                     ))}
 
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-gray-900">
-                        Client
-                        <span className="text-red-500 ml-1">*</span>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-muted-foreground-530">
+                        Client <span className="text-red-500 ml-1">*</span>
                       </label>
 
-                      <select
-                        value={newLois.client}
-                        disabled={isReadOnly}
-                        required
-                        onChange={(e) =>
-                          handleChange("client", e.target.value as Client)
-                        }
-                         className="h-11 px-4 border border-gray-300 rounded-lg
-  focus:ring-2 focus:ring-[#E30613]/30 transition-all outline-none bg-white w-full"
->
-                      
-                        <option value="">Sélectionner un client</option>
-
-                        {clients.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
+                      <input
+                        name="client"
+                        value={userClient}
+                        readOnly
+                        className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
+                      />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-gray-900">
+                      <label className="text-xs font-medium text-muted-foreground-900">
                         Norme
                         <span className="text-red-500 ml-1">*</span>
                       </label>
@@ -524,11 +627,10 @@ export function LoisDeRoute() {
                         onChange={(e) =>
                           handleChange("norme", e.target.value as Norme)
                         }
-                         className="h-11 px-4 border border-gray-300 rounded-lg
-  focus:ring-2 focus:ring-[#E30613]/30 transition-all outline-none bg-white w-full"
-
+                        className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                       >
-                        <option value="">Choisir...</option>
+                        <option value="">Sélectionner</option>
                         <option>WLTP</option>
                         <option>NEDC</option>
                         <option>RDE</option>
@@ -538,7 +640,7 @@ export function LoisDeRoute() {
                 </section>
                 {/* SECTION 2: Paramètres d'inertie */}
                 <section className="">
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-[#E30613] uppercase text-sm tracking-wider">
                       Paramètres d'inertie
                     </h3>
@@ -558,7 +660,7 @@ export function LoisDeRoute() {
                       },
                     ].map((item, i) => (
                       <div key={i} className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-gray-530">
+                        <label className="text-xs font-medium text-muted-foreground-530">
                           {item.label}
                           <span className="text-red-500 ml-1">*</span>
                         </label>
@@ -566,7 +668,7 @@ export function LoisDeRoute() {
                         <input
                           type="number"
                           disabled={isReadOnly}
-                          required   
+                          required
                           value={(newLois as any)[item.field]}
                           onChange={(e) =>
                             handleChange(
@@ -574,8 +676,8 @@ export function LoisDeRoute() {
                               Number(e.target.value),
                             )
                           }
-                          className="h-11 px-4 border border-gray-300 rounded-lg
-      focus:ring-2 focus:ring-[#E30613]/30 outline-none"
+                          className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                         />
                       </div>
                     ))}
@@ -583,7 +685,7 @@ export function LoisDeRoute() {
                 </section>
                 {/* SECTION 3: Coefficients */}
                 <section className="">
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-[#E30613] uppercase text-sm tracking-wider">
                       Coefficients de résistance
                     </h3>
@@ -596,7 +698,7 @@ export function LoisDeRoute() {
                       { label: "F2 (N/(km/h)²)", field: "f2" },
                     ].map((item, i) => (
                       <div key={i} className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-gray-530">
+                        <label className="text-xs font-medium text-muted-foreground-530">
                           {item.label}
                           <span className="text-red-500 ml-1">*</span>
                         </label>
@@ -604,7 +706,7 @@ export function LoisDeRoute() {
                         <input
                           type="number"
                           disabled={isReadOnly}
-                          required   
+                          required
                           value={(newLois as any)[item.field]}
                           onChange={(e) =>
                             handleChange(
@@ -612,8 +714,8 @@ export function LoisDeRoute() {
                               Number(e.target.value),
                             )
                           }
-                          className="h-11 px-4 border border-gray-300 rounded-lg
-      focus:ring-2 focus:ring-[#E30613]/30 outline-none"
+                          className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                         />
                       </div>
                     ))}
@@ -621,7 +723,7 @@ export function LoisDeRoute() {
                 </section>
                 {/* SECTION 4: Commentaires */}
                 <section className="">
-                  <label className="text-xs font-medium text-gray-900 block mb-2">
+                  <label className="text-xs font-medium text-muted-foreground-900 block mb-2">
                     Commentaires
                   </label>
 
@@ -631,8 +733,8 @@ export function LoisDeRoute() {
                     onChange={(e) =>
                       handleChange("description", e.target.value)
                     }
-                    className="w-full h-28 p-4 border border-gray-300 rounded-lg
-  focus:ring-2 focus:ring-[#E30613]/30 outline-none resize-none"
+                    className="w-full h-28 p-4 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                     placeholder="Informations additionnelles..."
                   />
                 </section>

@@ -257,7 +257,7 @@ const getStatusStyle = (status?: string) => {
     case "PAS_FAIT":
       return "bg-[#FFEBEE] text-[#C62828]";
     default:
-      return "bg-gray-100 text-gray-600";
+      return "bg-gray-100 text-muted-foreground-600";
   }
 };
 const getValidationStyle = (status?: string) => {
@@ -269,7 +269,7 @@ const getValidationStyle = (status?: string) => {
     case "OK_SOUS_RESERVE":
       return "bg-[#FFEBEE] text-[#C62828]";
     default:
-      return "bg-gray-100 text-gray-600";
+      return "bg-gray-100 text-muted-foreground-600";
   }
 };
 
@@ -277,7 +277,7 @@ export function Validation() {
   const [demandes, setDemandes] = useState<DemandeEssai[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [filterDate, setFilterDate] = useState("");
   const [filterProjet, setFilterProjet] = useState("");
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -345,11 +345,7 @@ export function Validation() {
 
       const res = await authFetch("/demandes-essai");
 
-      console.log("API RAW =", res);
-
       const data = res?.data ?? res?.content ?? res?._embedded?.demandes ?? res;
-
-      console.log("DATA PARSED =", data);
 
       setDemandes(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -371,6 +367,7 @@ export function Validation() {
     fetchDemandes();
     fetchVehicules();
     fetchCycles();
+    fetchCurrentUser();
   }, []);
 
   const fetchCycles = async () => {
@@ -381,38 +378,44 @@ export function Validation() {
       console.error(e);
     }
   };
-
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await authFetch("/users/me");
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Erreur récupération utilisateur", error);
+    }
+  };
   return (
     <>
       <div className="p-3 space-y-5 bg-gray-10 min-h-screen">
         <div className="flex items-center justify-between">
           {/* Titre + description */}
           <div>
-            <h1 className="text-3xl font-semibold text-black">
+            <h1 className="text-3xl font-semibold text-foreground">
               Gestion des validations
             </h1>
-            <p className="text-gray-600">Valider vos essais</p>
+            <p className="text-muted-foreground-600">Valider vos essais</p>
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
+        <div className="p-5 bg-card rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
           <div className="flex flex-wrap gap-4 items-center">
             {/* Recherche */}
             <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-400" />
               <input
                 type="text"
                 placeholder="Rechercher par nom de demande..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-12 pl-10 pr-3 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+                className="w-full h-12 pl-14 pr-3 bg-background text-foreground border border-border rounded-lg shadow-sm text-sm outline-none focus:ring-2 focus:ring-muted transition"
               />
             </div>
 
             {/* Filtre client */}
             {/*<select
-              className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
-              value={clientFilter}
+className="w-full sm:w-48 h-12 px-4 bg-background text-foreground border border-border rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-muted transition"              value={clientFilter}
               onChange={(e) => setClientFilter(e.target.value)}
             >
               <option value="Tous">Client (Tous)</option>
@@ -425,7 +428,7 @@ export function Validation() {
             <select
               value={filterVehicule}
               onChange={(e) => setFilterVehicule(e.target.value)}
-              className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+              className="w-full sm:w-48 h-12 px-4 bg-background text-foreground border border-border rounded-lg shadow-sm text-sm outline-none focus:ring-2 focus:ring-muted transition"
             >
               <option value="Tous">Tous les véhicules</option>
 
@@ -442,7 +445,7 @@ export function Validation() {
               placeholder="N° de projet"
               value={filterProjet}
               onChange={(e) => setFilterProjet(e.target.value)}
-              className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+              className="w-full sm:w-48 h-12 px-4 bg-background text-foreground border border-border rounded-lg shadow-sm text-sm outline-none focus:ring-2 focus:ring-muted transition"
             />
 
             {/* Filtre date */}
@@ -451,14 +454,13 @@ export function Validation() {
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
-              />
+className="w-full h-12 px-4 pr-10 bg-background text-foreground border border-border rounded-lg shadow-sm text-sm outline-none focus:ring-2 focus:ring-muted transition"              />
 
               {filterDate && (
                 <button
                   type="button"
                   onClick={() => setFilterDate("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground-400 hover:text-red-500"
                   title="Réinitialiser la date"
                 >
                   ✕
@@ -468,41 +470,35 @@ export function Validation() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-250 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-x-auto">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-sm text-left">
+            <table className="w-full min-w-[800px] text-sm text-left border-collapse">
               {/* Header */}
-              <thead className="bg-[#F1F5F9] border-b border-gray-300">
+              <thead className="bg-[#E30613] border-b border-gray-400">
                 <tr>
-                  <th className="px-5 py-4 font-semibold text-gray-600">
+                  <th className="px-5 py-4 font-semibold text-white">
                     Demande d'essai
                   </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
-                    Date
+                  <th className="px-3 py-4 font-semibold text-white">Date</th>
+                  <th className="px-4 py-4 font-semibold text-white">
+                    N°_Projet
                   </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
-                    N° Projet
-                  </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
-                    Client
-                  </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
+                  <th className="px-8 py-4 font-semibold text-white">Client</th>
+                  <th className="px-4 py-4 font-semibold text-white">
                     Véhicule
                   </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
-                    Cycle
-                  </th>
-                  <th className="px-2 py-4 font-semibold text-gray-600">
+                  {/* <th className="px-4 py-4 font-semibold text-white">Cycle</th>*/}
+                  <th className="px-2 py-4 font-semibold text-white">
                     Validation Technicien
                   </th>
-                  <th className="px-2 py-4 font-semibold text-gray-600">
+                  <th className="px-2 py-4 font-semibold text-white">
                     Validation Chargé
                   </th>
-                  <th className="px-4 py-4 font-semibold text-gray-600">
+                  <th className="px-3 py-4 font-semibold text-white">
                     Statut Global
                   </th>
-                  <th className="px-3 py-4 font-semibold text-gray-600">
-                    Valider
+                  <th className="px-3 py-4 font-semibold text-white">
+                    Validation
                   </th>
                 </tr>
               </thead>
@@ -515,40 +511,42 @@ export function Validation() {
                   return (
                     <tr
                       key={row.id}
-                      className="border-b border-gray-100 hover:bg-[#F9FBFD] transition-colors group"
+                      className="border-b border-gray-200 hover:bg-[#E30613]/3 transition-colors"
                     >
-                      <td className="px-5 py-4 text-gray-800 font-bold ">
+                      <td className="px-5 py-4 text-muted-foreground-800 font-bold ">
                         {row.nomAuto}
                       </td>
 
-                      <td className="px-3 py-4 text-gray-600">
+                      <td className="px-2 py-4 text-muted-foreground-800">
                         {row.datePlanification}
                       </td>
-                      <td className="px-4 py-4 text-gray-600">
+                      <td className="px-3 py-4 text-muted-foreground-800">
                         {row.numerProjet}
                       </td>
-                      <td className="px-4 py-4 text-gray-600">{row.client}</td>
-                      <td className="px-4 py-4 text-gray-600">
+                      <td className="px-2 py-4 text-muted-foreground-800">
+                        {row.client}
+                      </td>
+                      <td className="px-4 py-4 text-muted-foreground-800">
                         {row.vehicule?.identificateur}
                       </td>
-                      <td className="px-4 py-4 text-gray-600">
+                      {/*<td className="px-4 py-4 text-muted-foreground-800">
                         {row.cycle?.nom}
-                      </td>
-                      <td className="px-4 py-4 text-gray-600">
+                      </td>*/}
+                      <td className="px-4 py-4 text-muted-foreground-800">
                         <span
                           className={`px-3 py-1 rounded-full text-xs ${getValidationStyle(row.validationTechnicien?.decision)}`}
                         >
                           {row.validationTechnicien?.decision}
                         </span>
                       </td>
-                      <td className="px-3 py-4 text-gray-600">
+                      <td className="px-2 py-4 text-muted-foreground-800">
                         <span
                           className={`px-2 py-1 rounded-full text-xs ${getValidationStyle(row.validationCharge?.validation)}`}
                         >
                           {row.validationCharge?.validation}
                         </span>
                       </td>
-                      <td className="px-1 py-3 text-gray-600">
+                      <td className="px-1 py-4 text-muted-foreground-800">
                         <span
                           className={`px-1 py-1 rounded-lg font-bold shadow-sm ${getStatusStyle(globalStatus)}`}
                         >
@@ -556,37 +554,24 @@ export function Validation() {
                         </span>
                       </td>
 
-                      <td className="px-3 py-4 text-gray-600">
-                        <Menu
-                          as="div"
-                          className="relative inline-block text-left"
-                        >
-                          <MenuButton className="p-2 hover:bg-gray-100 rounded-full transition-all">
-                            <MoreVertical className="px-4 py-4 text-gray-600" />
-                          </MenuButton>
-                          <MenuItems className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md border border-gray-200 z-10">
-                            <MenuItem>
-                              {({ active }) => (
-                                <Link
-                                  to={`/app/validation/conducteur/${row.id}`}
-                                  className={`block px-4 py-2 text-sm text-gray-700 ${active ? "bg-gray-100" : ""}`}
-                                >
-                                  Valider en tant que Technicien d'essai
-                                </Link>
-                              )}
-                            </MenuItem>
-                            <MenuItem>
-                              {({ active }) => (
-                                <Link
-                                  to={`/app/validation/charge/${row.id}`}
-                                  className={`block px-4 py-2 text-sm text-gray-700 ${active ? "bg-gray-100" : ""}`}
-                                >
-                                  Valider en tant que Chargé d'essai
-                                </Link>
-                              )}
-                            </MenuItem>
-                          </MenuItems>
-                        </Menu>
+                      <td className="px-3 py-4 text-muted-foreground-800">
+                        {currentUser?.role === "TECHNICIEN_ESSAI" && (
+                          <Link
+                            to={`/app/validation/conducteur/${row.id}`}
+                            className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
+                          >
+                            Valider
+                          </Link>
+                        )}
+
+                        {currentUser?.role === "CHARGE_ESSAI" && (
+                          <Link
+                            to={`/app/validation/charge/${row.id}`}
+                            className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
+                          >
+                            Valider
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   );

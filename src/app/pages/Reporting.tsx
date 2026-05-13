@@ -64,13 +64,7 @@ export function Reporting() {
   );
 
   const handleExport = () => {
-    if (
-      !title ||
-      !numeroDemande ||
-      !client ||
-      !date ||
-      !chargeEssai
-    ) {
+    if (!title || !numeroDemande || !client || !date || !chargeEssai) {
       alert("Veuillez remplir tous les champs");
       return;
     }
@@ -113,17 +107,13 @@ export function Reporting() {
       .toLowerCase()
       .includes(searchText.toLowerCase());
 
-    const matchClient =
-      clientFilter === "Tous" || r.client === clientFilter;
+    const matchClient = clientFilter === "Tous" || r.client === clientFilter;
 
     const matchDate = !filterDate || r.date === filterDate;
 
-    const matchDriver =
-      !selectedDriver || r.chargeEssai === selectedDriver;
+    const matchDriver = !selectedDriver || r.chargeEssai === selectedDriver;
 
-    return (
-      matchSearch && matchClient && matchDate && matchDriver
-    );
+    return matchSearch && matchClient && matchDate && matchDriver;
   });
 
   return (
@@ -131,10 +121,8 @@ export function Reporting() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold mb-2">
-            Reporting
-          </h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-semibold mb-2">Reporting</h1>
+          <p className="text-muted-foreground-600">
             Analyses et rapports d'activité
           </p>
         </div>
@@ -149,22 +137,22 @@ export function Reporting() {
       </div>
 
       {/* Barre filtres */}
-      <div className="p-5 bg-white rounded-xl border shadow-sm flex items-center gap-4">
+      <div className="p-5 bg-card rounded-xl border shadow-sm flex items-center gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Rechercher par titre"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="w-full h-11 pl-10 pr-4 border rounded-lg focus:ring-2 focus:ring-[#E30613]/30 outline-none"
+            className="w-full h-11 pl-10 pr-4 bg-background text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-muted transition"
           />
         </div>
 
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
-          className="w-48 h-11 px-4 border rounded-lg focus:ring-2 focus:ring-[#E30613]/30"
+          className="w-48 h-11 px-4 bg-background text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-muted transition"
         >
           <option value="Tous">Tous les clients</option>
 
@@ -175,7 +163,7 @@ export function Reporting() {
         <select
           value={selectedDriver}
           onChange={(e) => setSelectedDriver(e.target.value)}
-          className="w-48 h-11 px-4 border rounded-lg focus:ring-2 focus:ring-[#E30613]/30"
+          className="w-48 h-11 px-4 bg-background text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-muted transition"
         >
           <option value="">Chargé d'essai</option>
           {drivers.map((d) => (
@@ -186,53 +174,44 @@ export function Reporting() {
         </select>
 
         <div
-          className="w-48 h-11 px-3 border border-gray-300 rounded-lg
-flex items-center gap-2
-focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
+          className="w-48 h-11 px-3 border border-border rounded-lg flex items-center gap-2 bg-background
+                focus-within:ring-2 focus-within:ring-[#E30613]/30 transition"
         >
+          {" "}
           <Calendar
             size={16}
-            className="text-gray-400 flex-shrink-0"
+            className="text-muted-foreground-400 flex-shrink-0"
           />
-
           <input
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="w-full h-full outline-none text-sm bg-transparent"
+            className="w-full h-full outline-none text-sm bg-transparent text-foreground appearance-none"
           />
         </div>
       </div>
 
       {/* Tableau */}
-      <div className="bg-white rounded-xl border border-gray-250 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-x-auto">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm text-left">
+          <table className="w-full min-w-[800px] text-sm text-left border-collapse">
             {/* Header */}
-            <thead className=" px-4 py-10 bg-[#F1F5F9] border-b border-gray-300">
+            <thead className="bg-[#B9032C] border-b border-gray-400">
               <tr>
-                <th className="px-8 py-4 font-semibold text-gray-600">
-                  Titre
-                </th>
-                <th className="px-8 py-4 font-semibold text-gray-600">
+                <th className="px-3 py-4 font-semibold text-white">Titre</th>
+                <th className="px-8 py-4 font-semibold text-white">
                   Nom de demande
                 </th>
-                <th className="px-8 py-4 font-semibold text-gray-600">
-                  Client
-                </th>
-                <th className="px-8 py-4 font-semibold text-gray-600">
+                <th className="px-8 py-4 font-semibold text-white">Client</th>
+                <th className="px-8 py-4 font-semibold text-white">
                   Date d'essai
                 </th>
-                <th className="px-4 py-4 font-semibold text-gray-600">
+                <th className="px-4 py-4 font-semibold text-white">
                   Chargé d'essai
                 </th>
 
-                <th className="px-10 py-4 font-semibold text-gray-600">
-                  Fichier
-                </th>
-                <th className="px-8 py-4 font-semibold text-gray-600">
-                  Actions
-                </th>
+                <th className="px-10 py-4 font-semibold text-white">Fichier</th>
+                <th className="px-8 py-4 font-semibold text-white">Actions</th>
               </tr>
             </thead>
 
@@ -240,37 +219,37 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
               {filteredReports.map((report) => (
                 <tr
                   key={report.id}
-                  className="border-b border-gray-100 hover:bg-[#F9FBFD] transition-colors group"
+                  className="border-b border-gray-200 hover:bg-[#E30613]/3 transition-colors"
                 >
-                  <td className="px-5 py-4 font-bold text-gray-800">
+                  <td className="px-3 py-3 font-bold text-muted-foreground-800">
                     {report.title}
                   </td>
 
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-5 py-3 text-muted-foreground-800">
                     {report.numeroDemande}
                   </td>
 
-                  <td className="px-3 py-4 text-gray-600">
+                  <td className="px-8 py-3 text-muted-foreground-800">
                     {report.client}
                   </td>
 
-                  <td className="px-4 py-4 text-gray-600">
+                  <td className="px-4 py-3 text-muted-foreground-800">
                     {report.date}
                   </td>
 
-                  <td className="px-5 py-4 text-gray-600">
+                  <td className="px-5 py-3 text-muted-foreground-800">
                     {report.chargeEssai}
                   </td>
 
                   {/* Nouvelle cellule rapport */}
-                  <td className="px-9 py-4 text-gray-600">
+                  <td className="px-12 py-3 text-muted-foreground-800">
                     <button className="flex items-center gap-1 text-[#E30613] hover:underline">
                       <FileText className="w-4 h-4" />
                       Voir
                     </button>
                   </td>
 
-                  <td className="px-4 py-4 text-right">
+                  <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
                       <Eye
                         className="cursor-pointer w-4 h-4 text-blue-600"
@@ -295,16 +274,16 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
       {/* Modal export */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-[520px] max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
+          <div className="bg-card w-full max-w-[520px] max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl flex flex-col">
             {/* HEADER */}
-            <div className="flex justify-between items-center py-3.5 px-6 border-b bg-gray-90">
-              <h2 className="text-xl font-bold text-slate-800">
+            <div className="flex justify-between items-center py-3.5 px-6 border-b border-border bg-card">
+              <h2 className="text-xl font-bold text-foreground">
                 Ajouter un rapport
               </h2>
 
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition"
+                className="text-muted-foreground hover:text-foreground transition"
               >
                 <svg
                   className="w-6 h-6"
@@ -321,7 +300,6 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
                 </svg>
               </button>
             </div>
-
             {/* BODY */}
             <div className="overflow-y-auto px-6 py-6 space-y-6">
               {/* SECTION IDENTIFICATION */}
@@ -334,11 +312,9 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Titre */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
+                    <label className="text-xs font-medium text-muted-foreground-900">
                       Titre du rapport{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="text"
@@ -352,19 +328,15 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
 
                   {/* Numéro demande */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
+                    <label className="text-xs font-medium text-muted-foreground-900">
                       Nom demande d'essai{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       placeholder="DE-001"
                       value={numeroDemande}
-                      onChange={(e) =>
-                        setNumeroDemande(e.target.value)
-                      }
+                      onChange={(e) => setNumeroDemande(e.target.value)}
                       className="h-11 px-4 border border-gray-300 rounded-lg
           focus:ring-2 focus:ring-[#E30613]/30 outline-none"
                     />
@@ -372,23 +344,16 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
 
                   {/* Client */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
-                      Client{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                    <label className="text-xs font-medium text-muted-foreground-900">
+                      Client <span className="text-red-500 ml-1">*</span>
                     </label>
                     <select
                       value={client}
-                      onChange={(e) =>
-                        setClient(e.target.value)
-                      }
+                      onChange={(e) => setClient(e.target.value)}
                       className="h-11 px-4 border border-gray-300 rounded-lg
-          focus:ring-2 focus:ring-[#E30613]/30 bg-white outline-none"
+          focus:ring-2 focus:ring-[#E30613]/30 bg-card outline-none"
                     >
-                      <option value="">
-                        Sélectionner client
-                      </option>
+                      <option value="">Sélectionner client</option>
                       {clients.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -399,11 +364,9 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
 
                   {/* Date */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
+                    <label className="text-xs font-medium text-muted-foreground-900">
                       Date du rapport{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="date"
@@ -416,19 +379,15 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
 
                   {/* Chargé d'essai */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
+                    <label className="text-xs font-medium text-muted-foreground-900">
                       Chargé d'essai{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="text"
                       placeholder="Nom du chargé d'essai"
                       value={chargeEssai}
-                      onChange={(e) =>
-                        setChargeEssai(e.target.value)
-                      }
+                      onChange={(e) => setChargeEssai(e.target.value)}
                       className="h-11 px-4 border border-gray-300 rounded-lg
           focus:ring-2 focus:ring-[#E30613]/30 outline-none"
                     />
@@ -436,19 +395,14 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
 
                   {/* Rapport */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-gray-900">
-                      Rapport{" "}
-                      <span className="text-red-500 ml-1">
-                        *
-                      </span>
+                    <label className="text-xs font-medium text-muted-foreground-900">
+                      Rapport <span className="text-red-500 ml-1">*</span>
                     </label>
                     <input
                       type="file"
-                      onChange={(e) =>
-                        setFile(e.target.files?.[0] || null)
-                      }
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
                       className="h-11 px-3 border border-gray-300 rounded-lg
-          focus:ring-2 focus:ring-[#E30613]/30 outline-none bg-white"
+          focus:ring-2 focus:ring-[#E30613]/30 outline-none bg-card"
                     />
                   </div>
                 </div>
@@ -463,9 +417,7 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
                 <textarea
                   placeholder="Informations sur le rapport..."
                   value={commentaire}
-                  onChange={(e) =>
-                    setCommentaire(e.target.value)
-                  }
+                  onChange={(e) => setCommentaire(e.target.value)}
                   className="w-full h-28 p-4 border border-gray-300 rounded-lg
             focus:ring-2 focus:ring-[#E30613]/30 outline-none resize-none"
                 />
@@ -477,7 +429,7 @@ focus-within:ring-2 focus-within:ring-[#E30613]/30 bg-white"
               <div className="flex justify-end gap-34 mt-8">
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="px-8 py-2.5 bg-white border-2 border-[#E30613] text-[#E30613] font-semibold rounded-lg transition shadow-sm"
+                  className="px-8 py-2.5 bg-card border-2 border-[#E30613] text-[#E30613] font-semibold rounded-lg transition shadow-sm"
                 >
                   Annuler
                 </button>

@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
+import ProtectedRoute from "./ProtectedRoute";
 import {
   Welcome,
   Login,
@@ -20,8 +21,10 @@ import {
   ForgotPassword,
   NotFound,
 } from "./pages";
+import { ResetPassword } from "./pages/ResetPassword";
 
 export const router = createBrowserRouter([
+  
   {
     path: "/",
     element: <Welcome />,
@@ -39,30 +42,43 @@ export const router = createBrowserRouter([
     element: <ForgotPassword />,
   },
   {
-    path: "/app",
-    element: <Layout />,
+  path: "/reset-password",
+  element: <ResetPassword />,
+},
+
+  // 🔐 Routes protégées
+  {
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: "users", element: <Users /> },
-      { path: "vehicules", element: <Vehicules /> },
-      { path: "lois-de-route", element: <LoisDeRoute /> },
-      { path: "calages", element: <Calages /> },
-      { path: "cycles", element: <Cycles /> },
-      { path: "demandes", element: <Demandes /> },
-      { path: "planning", element: <Planning /> },
-      { path: "validation", element: <Validation /> },
       {
-        path: "validation/conducteur/:id",
-        element: <ValidationConducteur />,
+        path: "/app",
+        element: <Layout />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: "users", element: <Users /> },
+          { path: "vehicules", element: <Vehicules /> },
+          { path: "lois-de-route", element: <LoisDeRoute /> },
+          { path: "calages", element: <Calages /> },
+          { path: "cycles", element: <Cycles /> },
+          { path: "demandes", element: <Demandes /> },
+          { path: "planning", element: <Planning /> },
+          { path: "validation", element: <Validation /> },
+          {
+            path: "validation/conducteur/:id",
+            element: <ValidationConducteur />,
+          },
+          {
+            path: "validation/charge/:id",
+            element: <ValidationCharge />,
+          },
+          { path: "reporting", element: <Reporting /> },
+          { path: "profile", element: <Profile /> },
+          
+        ],
       },
-      {
-        path: "validation/charge/:id",
-        element: <ValidationCharge />,
-      },
-      { path: "reporting", element: <Reporting /> },
-      { path: "profile", element: <Profile /> },
     ],
   },
+
   {
     path: "*",
     element: <NotFound />,

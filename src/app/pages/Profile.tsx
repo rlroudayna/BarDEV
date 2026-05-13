@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { authFetch } from "../api";
+import { toast } from "sonner";
 
 export function Profile() {
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
@@ -20,7 +21,16 @@ export function Profile() {
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [phone, setPhone] = useState("");
   const [newImageUrl, setNewImageUrl] = useState("");
-  const [newImageFile, setNewImageFile] = useState(null);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loadingPwd, setLoadingPwd] = useState(false);
+  const [oldPasswordError, setOldPasswordError] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileData, setProfileData] = useState({
     id: "",
     nom: "",
@@ -45,9 +55,9 @@ export function Profile() {
           email: user.email,
           role: user.role,
           client: user.client,
-          image:
-            user.imageUrl ||
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+          image: user.image
+            ? "http://localhost:8080" + user.image
+            : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
         });
 
         setPhone(user.numeroTelephone);
@@ -66,37 +76,101 @@ export function Profile() {
   });
 
   const handleSavePhoto = async () => {
+    if (!newImageFile) return;
+
     try {
-      const updatedUser = await authFetch(`/users/${profileData.id}/image`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const formData = new FormData();
+      formData.append("file", newImageFile);
+
+      const res = await fetch(
+        `http://localhost:8080/api/users/${profileData.id}/image`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: formData,
         },
-        body: JSON.stringify(newImageUrl), // ✔ STRING PURE
+      );
+
+      const updatedUser = await res.json();
+
+      setProfileData({
+        ...profileData,
+        image: "http://localhost:8080" + updatedUser.image,
       });
 
-      setProfileData(updatedUser);
       setIsEditingPhoto(false);
     } catch (err) {
       console.error("Erreur update photo", err);
     }
   };
 
-  
+  const handleChangePassword = async () => {
+    setOldPasswordError("");
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.error("Tous les champs sont obligatoires");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("Minimum 8 caractères");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    try {
+      setLoadingPwd(true);
+
+      await authFetch(`/users/me/change-password`, {
+        method: "PUT",
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+
+      toast.success("Mot de passe modifié avec succès");
+
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setOldPasswordError("");
+      setIsChangingPassword(false);
+    } catch (err: any) {
+      console.error("Password error:", err);
+
+      const message =
+        err.message || "Erreur lors du changement de mot de passe";
+
+      if (message.includes("Ancien mot de passe")) {
+        setOldPasswordError(message);
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setLoadingPwd(false);
+    }
+  };
   return (
-    <div className="max-w-4xl mx-auto  space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* TITLE */}
       <div>
         <h1 className="text-2xl font-bold">Mon Profil</h1>
-        <p className="text-gray-500 text-sm">
+        <p className="text-muted-foreground-500 text-sm">
           Gestion de vos informations personnelles
         </p>
       </div>
 
       {/* CARD */}
-      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-sm border overflow-hidden">
         {/* HEADER PROFILE */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-600 p-4 flex items-center gap-5 text-white">
+        <div className="bg-[#B9032C] p-4 flex items-center gap-5 text-white">
           <div className="relative">
             <img
               src={profileData.image}
@@ -115,6 +189,7 @@ export function Profile() {
             <h2 className="text-xl font-bold">
               {profileData.nom} {profileData.prenom}
             </h2>
+
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-gray-200" />
               <p className="text-sm text-gray-200">{profileData.role}</p>
@@ -131,32 +206,21 @@ export function Profile() {
               Informations personnelles
             </h3>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <Info
-                className="border rounded-lg outline-none"
-                label="Prénom"
-                value={profileData.nom}
-                icon={User}
-              />
-
-              <Info
-                className="border rounded-lg outline-none"
-                label="Nom"
-                value={profileData.prenom}
-                icon={User}
-              />
-
-              <div className="border rounded-lg p-3 flex items-center justify-between">
-                {/* LEFT SIDE */}
+            <div className="grid md:grid-cols-3 gap-6 text-foreground">
+              {" "}
+              <Info label="Prénom" value={profileData.nom} icon={User} />
+              <Info label="Nom" value={profileData.prenom} icon={User} />
+              {/* PHONE */}
+              <div className="border border-border rounded-lg p-3 flex items-center justify-between bg-card">
                 <div className="flex items-center gap-2">
-                  <Phone className="text-gray-500" />
+                  <Phone className="text-muted-foreground-500" />
 
                   <div>
-                    <p className="text-xs text-gray-500">Téléphone</p>
+                    <p className="text-xs text-muted-foreground-500">Téléphone</p>
 
                     {isEditingPhone ? (
                       <input
-                        className="border rounded px-2 py-1 text-sm outline-none"
+                        className="border border-border rounded px-2 py-1 text-sm bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/40"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                       />
@@ -166,7 +230,6 @@ export function Profile() {
                   </div>
                 </div>
 
-                {/* RIGHT SIDE ICON */}
                 <div className="flex items-center gap-2">
                   {isEditingPhone ? (
                     <Check
@@ -177,9 +240,12 @@ export function Profile() {
                             `/users/${profileData.id}`,
                             {
                               method: "PUT",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
                               body: JSON.stringify({
                                 ...profileData,
-                                phone: phone,
+                                numeroTelephone: phone, // ✔ FIX IMPORTANT
                               }),
                             },
                           );
@@ -194,35 +260,22 @@ export function Profile() {
                     />
                   ) : (
                     <Edit
-                      className="cursor-pointer text-gray-500 hover:text-red-600"
+                      className="cursor-pointer text-muted-foreground-500 hover:text-red-600"
                       onClick={() => setIsEditingPhone(true)}
                     />
                   )}
                 </div>
               </div>
-
+              <Info label="Email" value={profileData.email} icon={Mail} />
+              <Info label="Role" value={profileData.role} icon={Shield} />
               <Info
-                className="border rounded-lg outline-none"
-                label="Email"
-                value={profileData.email}
-                icon={Mail}
-              />
-
-              <Info
-                className="border rounded-lg outline-none"
-                label="Role"
-                value={profileData.role}
-                icon={Shield}
-              />
-
-              <Info
-                className="border rounded-lg outline-none"
                 label="Société"
                 value={profileData.client}
                 icon={Building}
               />
             </div>
           </div>
+
           {/* PASSWORD */}
           <div className="border-t pt-6">
             <div className="flex justify-between items-center mb-5">
@@ -237,115 +290,144 @@ export function Profile() {
                 </button>
               )}
             </div>
-
-            {isChangingPassword && (
-              <div className="bg-gray-50 border rounded-xl p-5 space-y-5 shadow-sm">
-                {/* Inputs */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Mot de passe actuel"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#E30613]/10 outline-none"
-                    onChange={(e) =>
-                      setPasswords({
-                        ...passwords,
-                        current: e.target.value,
-                      })
-                    }
-                  />
-
-                  <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Nouveau mot de passe"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#E30613]/10 outline-none"
-                    onChange={(e) =>
-                      setPasswords({
-                        ...passwords,
-                        new: e.target.value,
-                      })
-                    }
-                  />
-
-                  <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Confirmer le mot de passe"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#E30613]/10 outline-none"
-                    onChange={(e) =>
-                      setPasswords({
-                        ...passwords,
-                        confirm: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                {/* Actions */}
-                {/* ACTIONS PASSWORD */}
-                <div className="flex justify-between items-center">
-                  {/* Show password */}
-                  <button
-                    onClick={() => setShowPass(!showPass)}
-                    className="text-xs text-gray-500 flex items-center gap-2 hover:text-gray-700 transition"
-                  >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    {showPass ? "Masquer" : "Afficher"}
-                  </button>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setIsChangingPassword(false)}
-                      className="px-4 py-2 border border-[#E30613] text-[#E30613] rounded-lg hover:bg-red-50 transition"
-                    >
-                      Annuler
-                    </button>
-
-                    <button className="px-4 py-2 bg-[#E30613] text-white rounded-lg hover:bg-red-700 transition">
-                      Mettre à jour
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
+      {/* PASSWORD MODAL */}
+      {isChangingPassword && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-card p-5 rounded-xl w-[400px] space-y-3">
+            <h2 className="font-bold text-lg">Changer mot de passe</h2>
+
+            {/* ancien mot de passe */}
+            <div className="relative">
+              <input
+                type={showOldPassword ? "text" : "password"}
+                placeholder="Ancien mot de passe"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full border border-border rounded px-3 py-2 pr-10 bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-2.5 text-muted-foreground-500"
+              >
+                {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {oldPasswordError && (
+              <p className="text-red-500 text-sm">{oldPasswordError}</p>
+            )}
+
+            {/* nouveau mot de passe */}
+            <div className="relative">
+              <input
+                type={showNewPassword ? "text" : "password"}
+                placeholder="Nouveau mot de passe"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full border border-border rounded px-3 py-2 pr-10 bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-2.5 text-muted-foreground-500"
+              >
+                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {/* confirmation */}
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirmer le nouveau mot de passe"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full border border-border rounded px-3 py-2 pr-10 bg-background text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-2.5 text-muted-foreground-500"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {/* erreurs */}
+            {newPassword && newPassword.length < 8 && (
+              <p className="text-red-500 text-sm">
+                Minimum 8 caractères requis
+              </p>
+            )}
+
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-red-500 text-sm">
+                Les mots de passe ne correspondent pas
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsChangingPassword(false);
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+                className="px-3 py-1 border rounded"
+              >
+                Annuler
+              </button>
+
+              <button
+                onClick={handleChangePassword}
+                disabled={
+                  loadingPwd ||
+                  newPassword !== confirmPassword ||
+                  newPassword.length < 8
+                }
+                className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50"
+              >
+                {loadingPwd ? "..." : "Mettre à jour"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PHOTO MODAL */}
       {isEditingPhoto && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 space-y-5">
-            <h3 className="text-lg font-semibold">
-              Changer la photo de profil
-            </h3>
+          <div className="bg-card p-4 rounded-xl border space-y-3">
+            <h2 className="font-bold text-lg">Changer photo de profil</h2>
+
             <input
               type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setNewImageUrl(reader.result as string); // base64
-                };
-                reader.readAsDataURL(file);
-              }}
+              onChange={(e) => setNewImageFile(e.target.files?.[0] || null)}
+              className="w-full border p-2 rounded"
             />
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsEditingPhoto(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-100 transition"
+                className="px-3 py-1 border rounded"
               >
                 Annuler
               </button>
 
               <button
                 onClick={handleSavePhoto}
-                className="px-4 py-2 bg-[#E30613] text-white rounded-lg hover:bg-red-700 transition"
+                className="px-3 py-1 bg-red-600 text-white rounded"
               >
-                Enregistrer
+                Mettre à jour
               </button>
             </div>
           </div>
@@ -354,7 +436,6 @@ export function Profile() {
     </div>
   );
 }
-
 function Info({
   label,
   value,
@@ -367,13 +448,13 @@ function Info({
   className?: string;
 }) {
   return (
-    <div className={`p-2 bg-gray-50 border rounded-lg ${className}`}>
-      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+    <div className={`p-2 bg-card border border-border rounded-lg ${className}`}>
+      {" "}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground-500 mb-1">
         <Icon className="w-3 h-3" />
         <span>{label}</span>
       </div>
-
-      <p className="font-medium text-gray-800">{value}</p>
+      <p className="font-medium text-foreground">{value}</p>{" "}
     </div>
   );
 }

@@ -81,10 +81,11 @@ interface Vehicle {
   typeCatalyseur: Type_catalyseur;
 }
 
-const motorisationIcons: { [key: string]: any } = {
-  ICE: { icon: Flame, color: "#C62828" },
-  HEV: { icon: Battery, color: "#ED6C02" },
-  BEV: { icon: Zap, color: "#2E7D32" },
+const motorisationStyles: Record<string, string> = {
+  ICE: "bg-red-100 text-red-700",
+  HEV: "bg-orange-100 text-orange-700",
+  BEV: "bg-green-100 text-green-700",
+  PHEV: "bg-blue-100 text-blue-700",
 };
 
 export function Vehicules() {
@@ -93,16 +94,17 @@ export function Vehicules() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [modalMode, setModalMode] = useState<"view" | "edit" | "add">("add");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-
+  const [role, setRole] = useState<string>("");
   // États pour les filtres
   const [filterMotorisation, setFilterMotorisation] = useState("Tous");
   const [clientFilter, setClientFilter] = useState("Tous");
-
+  const canEdit = role?.includes("ADMIN") || role?.includes("CHARGE_ESSAI");
   const [filterLocalisation, setFilterLocalisation] = useState("Tous");
   const [filterCatalyseur, setFilterCatalyseur] = useState("Tous");
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const clients = ["RENAULT", "STELLANTIS", "FEV"];
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userClient, setUserClient] = useState<string>("");
   useEffect(() => {
     // Récupération des véhicules
     const fetchVehicles = async () => {
@@ -117,7 +119,18 @@ export function Vehicules() {
 
     fetchVehicles();
   }, []);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authFetch("/users/me");
+        setRole(user.role);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
+    fetchUser();
+  }, []);
   const handleAddVehicle = async (vehicle: any) => {
     try {
       const data = await authFetch("/vehicules", {
@@ -133,9 +146,6 @@ export function Vehicules() {
   };
   // Logique de filtrage
   const filteredVehicles = vehicles.filter((v) => {
-    const immat = (v.immatriculation ?? "").toLowerCase();
-    const vin = (v.vin ?? "").toLowerCase();
-
     const search = searchTerm.toLowerCase();
 
     const matchSearch =
@@ -144,7 +154,8 @@ export function Vehicules() {
       (v.nomAppliImmat ?? "").toLowerCase().includes(search) ||
       (v.identificateur ?? "").toLowerCase().includes(search) ||
       (v.marque ?? "").toLowerCase().includes(search);
-    // const matchesClient = clientFilter === "Tous" || v.client === clientFilter;
+
+    const matchesClient = clientFilter === "Tous" || v.client === clientFilter;
 
     const matchMoto =
       filterMotorisation === "Tous" || v.motorisation === filterMotorisation;
@@ -155,8 +166,7 @@ export function Vehicules() {
     const matchCata =
       filterCatalyseur === "Tous" || v.typeCatalyseur === filterCatalyseur;
 
-    // return matchesClient && matchSearch && matchMoto && matchLoc && matchCata;
-     return  matchSearch && matchMoto && matchLoc && matchCata;
+    return matchSearch && matchesClient && matchMoto && matchLoc && matchCata;
   });
 
   // Initial fetch
@@ -201,11 +211,15 @@ export function Vehicules() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // ⛔ bloque double clic
+
+    setIsSubmitting(true);
+
     const form = e.currentTarget;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData) as any;
 
-    // Conversion des nombres
     const vehicleData = {
       ...data,
       puissance: Number(data.puissance) || 0,
@@ -214,83 +228,125 @@ export function Vehicules() {
       empattement: Number(data.empattement) || 0,
       dimensionsPneus: Number(data.dimensionsPneus) || 0,
     };
-    if (!form.checkValidity()) {
-      form.reportValidity(); // affiche erreurs navigateur
-      return;
-    }
 
     try {
       if (modalMode === "edit" && selectedVehicle) {
-        // APPEL PUT pour modification
         const updated = await authFetch(`/vehicules/${selectedVehicle.id}`, {
           method: "PUT",
           body: JSON.stringify(vehicleData),
         });
+
         setVehicles((prev) =>
           prev.map((v) => (v.id === updated.id ? updated : v)),
         );
+
         toast.success("Véhicule modifié avec succès !");
       } else {
-        // APPEL POST pour ajout
         await addVehicle(vehicleData);
       }
+
       setShowModal(false);
     } catch (err) {
       console.error(err);
-      toast.error("Erreur lors de la modification !");
+      toast.error("Erreur !");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authFetch("/users/me");
+        setRole(user.role);
+        setUserClient(user.client); // 👈 IMPORTANT
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="space-y-5  p-3">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-semibold text-black mb-2">
+          <h1
+            className="text-3xl font-semibold text-foreground
+ mb-2 text-left"
+          >
             Gestion des Véhicules
           </h1>
-          <p className="text-gray-600">Gérer vos véhicules</p>
+          <p className="text-muted-foreground">Gérer vos véhicules</p>
         </div>
-        <button
-          onClick={() => {
-            setSelectedVehicle(null);
-            setModalMode("add");
-            setShowModal(true);
-          }}
-          className="ml-auto h-11 px-6 bg-[#E30613] text-white rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-md"
-        >
-          <Plus className="w-5 h-5" />
-          Ajouter un véhicule
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => {
+              setSelectedVehicle(null);
+              setModalMode("add");
+              setShowModal(true);
+            }}
+            className="ml-auto h-11 px-6 bg-[#E30613] text-white rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            Ajouter un véhicule
+          </button>
+        )}
       </div>
 
       {/* Barre de Recherche et Filtres améliorée */}
-      <div className="p-5 bg-white rounded-xl border border-gray-250 shadow-sm flex items-center gap-4">
+      <div className="p-5 bg-card rounded-xl border border-gray-300 shadow-sm flex items-center gap-4">
         <div className="flex flex-wrap gap-2 items-center">
           {/* Barre de recherche */}
           <div className="relative flex-1 w-[300px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-colors group-focus-within:text-[#E30613]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-600 transition-colors group-focus-within:text-[#E30613]" />
             <input
               type="text"
               placeholder="nom, identificateur, immatriculation, marque"
-              className="w-full h-11 pl-10 pr-3  border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E30613]/30"
+              className="
+  w-full h-11 pl-10 pr-3
+  bg-card
+  text-foreground
+  border border-border
+  rounded-lg shadow-sm
+  focus:outline-none focus:ring-2 focus:ring-ring
+"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          {/*<select
-            className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-          >
-            <option value="Tous">Client (Tous)</option>
-            <option value="RENAULT">RENAULT</option>
-            <option value="STELLANTIS">STELLANTIS</option>
-            <option value="FEV">FEV</option>
-          </select>*/}
+          {role?.includes("ADMIN") && (
+            <select
+              className="
+  w-full sm:w-48 h-12 px-4
+  bg-card
+  text-foreground
+  border border-border
+  rounded-lg shadow-sm text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring
+  transition
+"
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+            >
+              <option value="Tous">Client (Tous)</option>
+              <option value="RENAULT">RENAULT</option>
+              <option value="STELLANTIS">STELLANTIS</option>
+              <option value="FEV">FEV</option>
+            </select>
+          )}
           {/* Filtre motorisation */}
           <select
-            className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+            className="
+  w-full sm:w-48 h-12 px-4
+  bg-card
+  text-foreground
+  border border-border
+  rounded-lg shadow-sm text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring
+  transition
+"
             onChange={(e) => setFilterMotorisation(e.target.value)}
           >
             <option value="Tous">Motorisation (Tous)</option>
@@ -301,18 +357,34 @@ export function Vehicules() {
 
           {/* Filtre localisation */}
           <select
-            className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30  transition"
+            className="
+  w-full sm:w-48 h-12 px-4
+  bg-card
+  text-foreground
+  border border-border
+  rounded-lg shadow-sm text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring
+  transition
+"
             onChange={(e) => setFilterLocalisation(e.target.value)}
           >
             <option value="Tous">Localisation (Toutes)</option>
-            <option value="casablanca">ca-001</option>
-            <option value="ouad zem">ca-002</option>
-            <option value="ouad zem">OZ-003</option>
+            <option value="CA001">CA001</option>
+            <option value="CA002">CA002</option>
+            <option value="OZ003">OZ003</option>
           </select>
 
           {/* Filtre catalyseur */}
           <select
-            className="w-full sm:w-48 h-12 px-4 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E30613]/30 transition"
+            className="
+  w-full sm:w-48 h-12 px-4
+  bg-card
+  text-foreground
+  border border-border
+  rounded-lg shadow-sm text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring
+  transition
+"
             onChange={(e) => setFilterCatalyseur(e.target.value)}
           >
             <option value="Tous">Catalyseur (Tous)</option>
@@ -323,129 +395,147 @@ export function Vehicules() {
       </div>
       {/* Tableau des résultats */}
       {/* Tableau véhicules */}
-      <div className="bg-white rounded-xl border border-gray-250 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-sm text-left">
             {/* Header */}
-            <thead className="bg-[#F1F5F9] border-b border-gray-300">
+            <thead className="bg-[#E30613] border-b border-gray-400">
               <tr>
-                <th className="px-4 py-5 font-semibold text-gray-600">
-                  Véhicule
-                </th>
-                <th className="px-2 py-5  font-semibold text-gray-600">
+                <th className="px-6 py-5 font-semibold text-white">Véhicule</th>
+                <th className="px-6 py-5  font-semibold text-white">
                   Identificateur
                 </th>
-                <th className="px-4 py-5  font-semibold text-gray-600">
-                  Client
-                </th>
+                <th className="px-6 py-5  font-semibold text-white">Client</th>
 
-                <th className="px-4 py-5 font-semibold text-gray-600">
+                <th className="px-4 py-5 font-semibold text-white">
                   Immatriculation
                 </th>
-                <th className="px-4 py-5 font-semibold text-gray-600">
-                  Marque
-                </th>
+                <th className="px-6 py-5 font-semibold text-white">Marque</th>
 
-                <th className="px-4 py-5 font-semibold text-gray-600">
+                <th className="px-6 py-5 font-semibold text-white">
                   Motorisation
                 </th>
-                <th className="px-4 py-5 font-semibold text-gray-600">
+                <th className="px-6 py-5 font-semibold text-white">
                   Localisation
                 </th>
-                <th className="px-2 py-5 font-semibold text-gray-600">
+                <th className="px-4 py-5 font-semibold text-white">
                   Catalyseur
                 </th>
-                <th className="px-1 py-5 font-semibold text-gray-600">
-                  Actions
-                </th>
+                <th className="px-6 py-5 font-semibold text-white">Actions</th>
               </tr>
             </thead>
 
             {/* Body */}
             <tbody>
               {filteredVehicles.map((v) => {
-                const MotoIcon =
-                  motorisationIcons[v.motorisation]?.icon || Flame;
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    motorisationStyles[v.motorisation] ||
+                    "bg-card-100 text-muted-foreground-700"
+                  }`}
+                >
+                  {v.motorisation}
+                </span>;
 
                 return (
                   <tr
                     key={v.id}
-                    className="border-b border-gray-100 hover:bg-[#F9FBFD] transition-colors"
+                    className="border-b border-gray-200 hover:bg-[#E30613]/3 transition-colors"
                   >
                     {/* Véhicule */}
-                    <td className="px-3 py-4 font-medium text-gray-800">
+                    <td className="px-2 py-4 font-bold text-muted-foreground-800">
                       {v.nomAppliImmat}
                     </td>
 
                     {/* Identificateur  */}
-                    <td className="px-4 py-4 text-gray-600">
+                    <td className="px-8 py-4 text-muted-foreground-800">
                       {v.identificateur}
                     </td>
                     {/* Client  */}
-                    <td className="px-3 py-4 text-gray-600">{v.client}</td>
+                    <td className="px-4 py-4 text-muted-foreground-800">
+                      {v.client}
+                    </td>
 
                     {/* Immatriculation */}
-                    <td className="px-5 py-4 text-gray-600">
+                    <td className="px-5 py-4 text-muted-foreground-800">
                       {v.immatriculation}
                     </td>
                     {/* Marque  */}
-                    <td className="px-4 py-4 text-gray-600">{v.marque}</td>
+                    <td className="px-4 py-4 text-muted-foreground-800">
+                      {v.marque}
+                    </td>
 
                     {/* Motorisation */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <MotoIcon
-                          className="w-4 h-4"
-                          style={{
-                            color: motorisationIcons[v.motorisation]?.color,
-                          }}
-                        />
-                        <span className="text-gray-700">{v.motorisation}</span>
-                      </div>
+                    <td className="px-10 py-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${motorisationStyles[v.motorisation]}`}
+                      >
+                        {v.motorisation}
+                      </span>
                     </td>
 
                     {/* Localisation */}
-                    <td className="px-4 py-4 text-gray-600">
+                    <td className="px-8 py-4 text-muted-foreground-800">
                       {v.localisation}
                     </td>
 
                     {/* Catalyseur */}
-                    <td className="px-1 py-4">
+                    <td className="px-6 py-4">
                       <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
                         {v.typeCatalyseur}
                       </span>
                     </td>
 
                     {/* Actions */}
-                    <td className=" px-1 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Eye
-                          className="cursor-pointer w-4 h-4 text-blue-500"
+                    <td className="px-1 py-4">
+                      <div className="flex items-center gap-2">
+                        {/* Actions réservées */}
+                        {canEdit && (
+                          <>
+                            {/* Modifier */}
+                            <button
+                              onClick={() => {
+                                setSelectedVehicle(v);
+                                setModalMode("edit");
+                                setShowModal(true);
+                              }}
+                              className="p-1 rounded-lg bg-green-100 hover:bg-green-200"
+                            >
+                              <Edit className="w-4 h-4 text-green-700" />
+                            </button>
+
+                            {/* Dupliquer */}
+                            <button
+                              onClick={() => duplicateVehicle(v.id)}
+                              className="p-1 rounded-lg bg-gray-200 hover:bg-gray-400"
+                            >
+                              <Copy className="w-4 h-4 text-muted-foreground-700" />
+                            </button>
+
+                            {/* Supprimer */}
+                            {/* Supprimer */}
+                            <button
+                              onClick={() => {
+                                setSelectedVehicle(v); // IMPORTANT
+                                setShowConfirmDelete(true); // OUVRIR DIALOG
+                              }}
+                              className="p-1 rounded-lg bg-red-100 hover:bg-red-200"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-700" />
+                            </button>
+                          </>
+                        )}
+                        {/* Voir détails : tout le monde */}
+                        <button
                           onClick={() => {
                             setSelectedVehicle(v);
                             setModalMode("view");
                             setShowModal(true);
                           }}
-                        />
-                        <Edit
-                          className="cursor-pointer w-4 h-4 text-green-600"
-                          onClick={() => {
-                            setSelectedVehicle(v);
-                            setModalMode("edit");
-                            setShowModal(true);
-                          }}
-                        />
-                        <Copy
-                          className="cursor-pointer w-4 h-4 text-black"
-                          onClick={() => duplicateVehicle(v.id)}
-                        />
-                        <Trash2
-                          className="cursor-pointer w-4 h-4 text-red-600"
-                          onClick={() => {
-                            setSelectedVehicle(v);
-                            setShowConfirmDelete(true);
-                          }}
-                        />
+                          className="p-1 rounded-lg bg-blue-100 hover:bg-blue-200"
+                        >
+                          <Eye className="w-4 h-4 text-blue-700" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -455,7 +545,10 @@ export function Vehicules() {
               {/* Aucun résultat */}
               {filteredVehicles.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-400">
+                  <td
+                    colSpan={7}
+                    className="text-center py-10 text-muted-foreground-400"
+                  >
                     Aucun véhicule trouvé
                   </td>
                 </tr>
@@ -470,7 +563,7 @@ export function Vehicules() {
           <DialogHeader>
             <DialogTitle>Confirmation de suppression</DialogTitle>
           </DialogHeader>
-          <p className="py-4 text-gray-700">
+          <p className="py-4 text-muted-foreground-700">
             Voulez-vous vraiment supprimer le véhicule{" "}
             <span className="font-bold">{selectedVehicle?.nomAppliImmat}</span>{" "}
             ?
@@ -478,7 +571,7 @@ export function Vehicules() {
           <div className="flex justify-end gap-4 mt-4">
             <button
               onClick={() => setShowConfirmDelete(false)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border-border rounded-lg hover:bg-gray-50 transition-colors"
             >
               Non
             </button>
@@ -502,20 +595,20 @@ export function Vehicules() {
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold text-gray-800">
-              <div className="flex justify-between items-center p-2 border-b bg-gray-90">
+            <DialogTitle className="text-2xl font-semibold text-foreground">
+              <div className="flex justify-between items-center p-2 border-b bg-card border-b border-border">
                 {modalMode === "add" && "Ajouter un véhicule"}
                 {modalMode === "edit" && "Modifier un véhicule"}
                 {modalMode === "view" && "Détails du véhicule"}
               </div>
             </DialogTitle>
           </DialogHeader>
-          <form className="space-y-10 mt-6" onSubmit={handleSubmit}>
+          <form className="space-y-6 mt-2" onSubmit={handleSubmit}>
             {" "}
             {/* SECTION IDENTIFICATION */}
-            <p className="text-xs text-gray-500"></p>
+            <p className="text-xs text-muted-foreground-500"></p>
             <div>
-              <h3 className="text-sm font-semibold text-[#E30613] mb-5 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-[#E30613] mb-2 uppercase tracking-wide">
                 Identification du véhicule
               </h3>
 
@@ -529,6 +622,7 @@ export function Vehicules() {
                   {
                     label: "Identificateur",
                     key: "identificateur",
+                    placeholder: "Automatique",
                     required: true,
                   },
                   {
@@ -553,7 +647,7 @@ export function Vehicules() {
                   },
                 ].map((field) => (
                   <div key={field.key} className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-gray-530">
+                    <label className="text-xs font-medium text-muted-foreground">
                       {field.label}
                       {field.required && (
                         <span className="text-red-500 ml-1">*</span>
@@ -562,57 +656,55 @@ export function Vehicules() {
 
                     <input
                       name={field.key}
-                      required={field.required} // ✅ IMPORTANT
+                      required={field.required}
                       defaultValue={
                         selectedVehicle?.[
                           field.key as keyof Vehicle
                         ]?.toString() ?? ""
                       }
-                      disabled={modalMode === "view"}
-                      className="h-11 px-3 rounded-lg border border-gray-300
-    focus:outline-none focus:ring-2 focus:ring-[#E30613]/30"
+                      disabled={
+                        modalMode === "view" || field.key === "identificateur"
+                      }
+                      className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                     />
                   </div>
                 ))}
 
                 {/* Client */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-530">
-                    Client
-                    <span className="text-red-500 ml-1">*</span>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Client <span className="text-red-500 ml-1">*</span>
                   </label>
 
-                  <select
+                  <input
                     name="client"
-                    required // ✅ bloque si vide
-                    defaultValue={selectedVehicle?.client ?? ""}
-                    disabled={modalMode === "view"}
-                    className="h-11 px-3 rounded-lg border border-gray-300"
-                  >
-                    <option value="">Sélectionner un client</option>
-                    {clients.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                    value={userClient}
+                    readOnly
+                    className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
+                  />
                 </div>
 
                 {/* Localisation */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-530">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Localisation
                     <span className="text-red-500 ml-1">*</span>
                   </label>
 
                   <select
                     name="localisation"
-                    required // ✅ bloque si vide
+                    required 
+                    defaultValue=""
                     disabled={modalMode === "view"}
-                    className="h-11 px-3 rounded-lg border border-gray-300
-              focus:outline-none focus:ring-2 focus:ring-[#E30613]/30
-             "
+                    className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                   >
+                    <option value="" disabled>
+                      Sélectionner
+                    </option>
+
                     {["CA001", "CA002", "CA003", "OZ001"].map((s) => (
                       <option key={s}>{s}</option>
                     ))}
@@ -622,24 +714,28 @@ export function Vehicules() {
             </div>
             {/* MOTORISATION */}
             <div>
-              <h3 className="text-sm font-semibold text-[#E30613] mb-5 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-[#E30613] mb-2 uppercase tracking-wide">
                 Motorisation
               </h3>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-530">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Type moteur
                     <span className="text-red-500 ml-1">*</span>
                   </label>
 
                   <select
                     name="motorisation"
-                    required // ✅ bloque si vide
+                    required
+                    defaultValue=""
                     disabled={modalMode === "view"}
-                    className="h-11 px-3 rounded-lg border border-gray-300
-              focus:ring-2 focus:ring-[#E30613]/30 "
+                    className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                   >
+                    <option value="" disabled>
+                      Sélectionner
+                    </option>
                     {["ICE", "HEV", "PHEV", "BEV"].map((opt) => (
                       <option key={opt}>{opt}</option>
                     ))}
@@ -647,20 +743,27 @@ export function Vehicules() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-530">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Carburant
                     <span className="text-red-500 ml-1">*</span>
                   </label>
 
                   <select
                     name="carburant"
-                    required // ✅ bloque si vide
+                    required
+                    defaultValue=""
                     disabled={modalMode === "view"}
-                    className="h-11 px-3 rounded-lg border border-gray-300
-              focus:ring-2 focus:ring-[#E30613]/30 "
+                    className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+  focus:outline-none focus:ring-2 focus:ring-ring transition"
                   >
+                    <option value="" disabled>
+                      Sélectionner
+                    </option>
+
                     {["E10", "E3", "BPVR"].map((opt) => (
-                      <option key={opt}>{opt}</option>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -678,7 +781,7 @@ export function Vehicules() {
                   },
                 ].map((field) => (
                   <div key={field.key} className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-gray-500">
+                    <label className="text-xs font-medium text-muted-foreground-500">
                       {field.label}
                       {field.required && (
                         <span className="text-red-500 ml-1">*</span>
@@ -693,8 +796,8 @@ export function Vehicules() {
                         ]?.toString() ?? ""
                       }
                       disabled={modalMode === "view"}
-                      className="h-11 px-3 rounded-lg border border-gray-300
-                focus:ring-2 focus:ring-[#E30613]/30 "
+                      className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                     />
                   </div>
                 ))}
@@ -703,7 +806,7 @@ export function Vehicules() {
             {/* CARACTERISTIQUES */}
             {/* CARACTERISTIQUES */}
             <div>
-              <h3 className="text-sm font-semibold text-[#E30613] mb-5 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-[#E30613] mb-2 uppercase tracking-wide">
                 Caractéristiques
               </h3>
 
@@ -739,7 +842,7 @@ export function Vehicules() {
                   },
                 ].map((field) => (
                   <div key={field.key} className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-530">
+                    <label className="text-xs text-muted-foreground">
                       {field.label}
                       <span className="text-red-500 ml-1">*</span>
                     </label>
@@ -754,8 +857,8 @@ export function Vehicules() {
                         name="typeCatalyseur" // ✅ OBLIGATOIRE
                         required // ✅ bloque si vide
                         disabled={modalMode === "view"}
-                        className="h-11 px-3 rounded-lg border border-gray-300
-            focus:ring-2 focus:ring-[#E30613]/30 bg-white"
+                        className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                       >
                         <option value="">Sélectionner</option>
                         <option value="SCR">SCR</option>
@@ -771,8 +874,8 @@ export function Vehicules() {
                           ]?.toString() ?? ""
                         }
                         disabled={modalMode === "view"}
-                        className="h-11 px-3 rounded-lg border border-gray-300
-            focus:ring-2 focus:ring-[#E30613]/30"
+                        className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
+focus:outline-none focus:ring-2 focus:ring-ring transition"
                       />
                     )}
                   </div>
@@ -789,7 +892,7 @@ export function Vehicules() {
                     setModalMode("add");
                     setShowModal(false);
                   }}
-                  className="px-5 py-2 border rounded-lg hover:bg-gray-50"
+                  className="px-5 py-2 border rounded-lg hover:bg-muted"
                 >
                   Annuler
                 </button>
