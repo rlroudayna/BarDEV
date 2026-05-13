@@ -19,7 +19,9 @@ public class Vehicule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String nomAppliImmat;
+
     private String identificateur;
     private String immatriculation;
     private String marque ;

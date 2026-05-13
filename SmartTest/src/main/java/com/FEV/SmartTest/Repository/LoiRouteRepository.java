@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface LoiRouteRepository extends JpaRepository<LoiRoute, Long> {
     List<LoiRoute> findByClient(Client client);
+    long countByClient(Client client);
 
 }

@@ -1,12 +1,14 @@
 package com.FEV.SmartTest.Controller;
 
 import com.FEV.SmartTest.Entity.Vehicule;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Service.VehiculeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/vehicules")
@@ -33,7 +35,7 @@ public class VehiculeController {
 
     @GetMapping
     public List<Vehicule> getAllVehiculesClient() {
-        return vehiculeService.getAllVehiculesClient();
+        return vehiculeService.getVehiculesSelonRole();
     }
 
     @GetMapping("/{id}")
@@ -57,9 +59,10 @@ public class VehiculeController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(vehiculeService.duplicateVehicule(id));
     }
-
     @GetMapping("/count")
-    public long getVehiculeCount() {
-        return vehiculeService.getVehiculeCount();
+    public long getVehiculeCount(
+            @RequestParam(required = false) Client client
+    ) {
+        return vehiculeService.getVehiculeCount(Optional.ofNullable(client));
     }
 }

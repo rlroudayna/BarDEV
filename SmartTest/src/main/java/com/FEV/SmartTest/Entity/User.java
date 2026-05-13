@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.processing.Pattern;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
@@ -38,6 +40,9 @@ public class User {
 
     @Column(columnDefinition = "TEXT")
     private String image;
+
+    private String resetToken;
+    private LocalDateTime tokenExpiration;
 }
 
 

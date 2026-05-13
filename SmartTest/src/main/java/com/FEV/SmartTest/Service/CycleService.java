@@ -4,10 +4,12 @@ import com.FEV.SmartTest.Entity.CycleConduite;
 import com.FEV.SmartTest.Entity.User;
 import com.FEV.SmartTest.Entity.Vehicule;
 import com.FEV.SmartTest.Enum.Client;
+import com.FEV.SmartTest.Enum.Role;
 import com.FEV.SmartTest.Repository.CycleConduiteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CycleService {
@@ -22,18 +24,11 @@ public class CycleService {
         this.userDetailsService = userDetailsService;
     }
 
-    private void checkCharge() {
-        User currentUser = userDetailsService.getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        if (!"CHARGE_ESSAI".equals(currentUser.getRole().name())) {
-            throw new RuntimeException("Action réservée aux conducteurs");
-        }
-    }
 
     // CREATE
     public CycleConduite createTest(CycleConduite cycleConduite) {
-        checkCharge();
+
         return cycleConduiteRepository.save(cycleConduite);
     }
 
@@ -44,7 +39,7 @@ public class CycleService {
 
     // UPDATE
     public CycleConduite updateTest(Long id, CycleConduite updatedCycleConduite) {
-        checkCharge();
+
         return cycleConduiteRepository.findById(id).map(t -> {
             t.setNom(updatedCycleConduite.getNom());
             t.setFamilleTest(updatedCycleConduite.getFamilleTest());
@@ -59,20 +54,38 @@ public class CycleService {
 
     // DELETE
     public void deleteTest(Long id) {
-        checkCharge();
         cycleConduiteRepository.deleteById(id);
     }
 
-    public long getCycleCount() {
-        return cycleConduiteRepository.count();
-    }
-    public List<CycleConduite> getAllCycleClient() {
+    public long getCycleCount(Optional<Client> clientOpt) {
+
         User currentUser = userDetailsService.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        Client client = currentUser.getClient();
+        Client client;
 
-        return cycleConduiteRepository.findByClient(client);
+        if (currentUser.getRole() == Role.ADMIN) {
+            client = clientOpt.orElse(null);
+        } else {
+            client = currentUser.getClient();
+        }
+
+        if (client == null) {
+            return cycleConduiteRepository.count();
+        }
+
+        return cycleConduiteRepository.countByClient(client);
+    }
+
+
+    public List<CycleConduite> getAllCycleClient() {
+
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        return currentUser.getRole() == Role.ADMIN
+                ? cycleConduiteRepository.findAll()
+                : cycleConduiteRepository.findByClient(currentUser.getClient());
     }
 
 }

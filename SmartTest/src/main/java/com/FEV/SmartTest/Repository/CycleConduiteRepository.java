@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface CycleConduiteRepository extends JpaRepository<CycleConduite, Long> {
     List<CycleConduite> findByClient(Client client);
-
+    long countByClient(Client client);
 }

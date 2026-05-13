@@ -9,10 +9,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 @Service
 public class DemandeEssaiService {
 
@@ -41,19 +39,11 @@ public class DemandeEssaiService {
         this.calageRepository = calageRepository;
         this.cycleRepository = cycleRepository;
     }
-    //  Vérification rôle
-    private void checkCharge() {
-        User currentUser = userDetailsService.getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        if (!"CHARGE_ESSAI".equals(currentUser.getRole().name())) {
-            throw new RuntimeException("Action réservée aux conducteurs");
-        }
-    }
 
     // ------------------ CREATE ------------------
     public DemandeEssai createDemande(DemandeEssai demande) {
-        checkCharge();
+
         return demandRepository.save(demande);
     }
     public DemandeEssai create(DemandeEssaiRequest dto) {
@@ -178,7 +168,7 @@ public class DemandeEssaiService {
 
     // ------------------ UPDATE ------------------
     public DemandeEssai updateDemande(Long id, DemandeEssai updated) {
-        checkCharge();
+
 
         return demandRepository.findById(id).map(d -> {
 
@@ -322,12 +312,12 @@ public class DemandeEssaiService {
     }
     // ------------------ DELETE ------------------
     public void deleteDemande(Long id) {
-        checkCharge();
+
         demandRepository.deleteById(id);
     }
     public DemandeEssai duplicateDemande(Long id) {
 
-        checkCharge();
+
 
         DemandeEssai original = demandRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Demande introuvable"));
@@ -379,24 +369,39 @@ public class DemandeEssaiService {
         return stats;
     }
 
-    public List<Map<String, Object>> evolutionEssais12Mois() {
+    public List<Map<String, Object>> evolutionEssais12Mois(Client clientParam) {
+
         int year = LocalDate.now().getYear();
 
-        List<Object[]> results = demandRepository.countByMonthAndStatut(year);
+        User user = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client;
+
+        if (user.getRole() == Role.ADMIN) {
+            client = clientParam;
+        }
+        else {
+            client = user.getClient();
+        }
+
+        List<Object[]> results = (client == null)
+                ? demandRepository.countByMonthAndStatut(year)
+                : demandRepository.countByMonthAndStatutAndClient(year, client);
 
         Map<Integer, Map<String, Object>> data = new HashMap<>();
 
         String[] mois = {"Jan","Fév","Mars","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"};
 
-        // initialisation
         for (int i = 1; i <= 12; i++) {
             Map<String, Object> m = new HashMap<>();
-            m.put("month", mois[i-1]);
-            m.put("Fait", 0);
-            m.put("Pas_fait", 0);
-            m.put("En_cours", 0);
+            m.put("month", mois[i - 1]);
+            m.put("Fait", 0L);
+            m.put("Pas_fait", 0L);
+            m.put("En_cours", 0L);
             data.put(i, m);
         }
+
         for (Object[] r : results) {
 
             int month = (Integer) r[0];
@@ -407,23 +412,46 @@ public class DemandeEssaiService {
 
             if (statut == StatutGlobal.FAIT) {
                 m.put("Fait", count);
-            }
-            else if (statut == StatutGlobal.PAS_FAIT) {
+            } else if (statut == StatutGlobal.PAS_FAIT) {
                 m.put("Pas_fait", count);
-            }
-            else if (statut == StatutGlobal.EN_COURS) {
+            } else if (statut == StatutGlobal.EN_COURS) {
                 m.put("En_cours", count);
             }
         }
-        return new ArrayList<>(data.values());
+
+        return data.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
     }
 
+    public int convertMonth(String m) {
+        return switch (m) {
+            case "Jan" -> 1;
+            case "Feb" -> 2;
+            case "Mar" -> 3;
+            case "Apr" -> 4;
+            case "May" -> 5;
+            case "Jun" -> 6;
+            case "Jul" -> 7;
+            case "Aug" -> 8;
+            case "Sep" -> 9;
+            case "Oct" -> 10;
+            case "Nov" -> 11;
+            case "Dec" -> 12;
+            default -> throw new IllegalArgumentException("Mois invalide");
+        };
+    }
+    public List<Map<String, Object>> evolutionEssaisParSemaine(int month, Client client) {
 
-    public List<Map<String, Object>> evolutionEssaisParSemaine(int month) {
         int year = LocalDate.now().getYear();
-        List<Object[]> results = demandRepository.countByWeekAndStatut(year, month);
+
+        List<Object[]> results =
+                demandRepository.countByWeekAndStatut(year, month, client);
+
         List<Map<String, Object>> weeks = new ArrayList<>();
-        // Initialisation S1-S4
+
         for (int i = 1; i <= 4; i++) {
             Map<String, Object> w = new HashMap<>();
             w.put("week", "S" + i);
@@ -432,40 +460,99 @@ public class DemandeEssaiService {
             w.put("En_cours", 0);
             weeks.add(w);
         }
+
         for (Object[] r : results) {
-            int week = (Integer) r[0];
+            int week = ((Number) r[0]).intValue();
             StatutGlobal statut = (StatutGlobal) r[1];
             Long count = (Long) r[2];
-            int index = (week % 4); // transforme week DB → S1..S4
+
+            int index = week - 1;
+
             Map<String, Object> w = weeks.get(index);
-            if (statut == StatutGlobal.FAIT) {
-                w.put("Fait", count);
-            }
-            else if (statut == StatutGlobal.PAS_FAIT) {
-                w.put("Pas_fait", count);
-            }
-            else if (statut == StatutGlobal.EN_COURS) {
-                w.put("En_cours", count);
+
+            switch (statut) {
+                case FAIT -> w.put("Fait", count);
+                case PAS_FAIT -> w.put("Pas_fait", count);
+                case EN_COURS -> w.put("En_cours", count);
             }
         }
+
         return weeks;
     }
     public long getTotalDemandes() {
-        return demandRepository.count();
+
+        User user = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        if (user.getRole() == Role.ADMIN) {
+            return demandRepository.count();
+        }
+
+        return demandRepository.countByClient(user.getClient());
     }
 
-    // Nombre d'essais planifiés aujourd'hui
-    public long getNombreEssaisAujourdHui() {
-        LocalDate today = LocalDate.now();
-        return demandRepository.countByDatePlanification(today);
-    }
 
     public List<DemandeEssai> getAllDemandeClient() {
+
         User currentUser = userDetailsService.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        Client client = currentUser.getClient();
+        return currentUser.getRole() == Role.ADMIN
+                ? demandRepository.findAll()
+                : demandRepository.findByClient(currentUser.getClient());
+    }
+    public long getTotalDemandes(Optional<Client> clientOpt) {
 
-        return demandRepository.findByClient(client);
+        User user = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client;
+
+        if (user.getRole() == Role.ADMIN) {
+            client = clientOpt.orElse(null);
+        } else {
+            client = user.getClient();
+        }
+
+        if (client == null) {
+            return demandRepository.count();
+        }
+
+        return demandRepository.countByClient(client);
+    }
+
+
+    public Map<String, Long> countDemandesByStatut(Optional<Client> clientOpt) {
+
+        User user = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client;
+
+        if (user.getRole() == Role.ADMIN) {
+            client = clientOpt.orElse(null);
+        }
+        else {
+            client = user.getClient();
+        }
+
+        long fait = (client == null)
+                ? demandRepository.countByStatutGlobal(StatutGlobal.FAIT)
+                : demandRepository.countByStatutGlobalAndClient(StatutGlobal.FAIT, client);
+
+        long encours = (client == null)
+                ? demandRepository.countByStatutGlobal(StatutGlobal.EN_COURS)
+                : demandRepository.countByStatutGlobalAndClient(StatutGlobal.EN_COURS, client);
+
+        long pasFait = (client == null)
+                ? demandRepository.countByStatutGlobal(StatutGlobal.PAS_FAIT)
+                : demandRepository.countByStatutGlobalAndClient(StatutGlobal.PAS_FAIT, client);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("fait", fait);
+        stats.put("encours", encours);
+        stats.put("pasFait", pasFait);
+
+        return stats;
     }
 }

@@ -1,12 +1,14 @@
 package com.FEV.SmartTest.Controller;
 
 import com.FEV.SmartTest.Entity.DemandeEssai;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Service.DemandeEssaiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/demandes-essai")
@@ -64,21 +66,32 @@ public class DemandeEssaiController {
         return demandeEssaiService.countDemandesByStatut();
     }
 
-    @GetMapping("/ÉvolutionEssais12Mois")
-    public List<Map<String, Object>> evolutionEssais() {
-        return demandeEssaiService.evolutionEssais12Mois();
+    @GetMapping("/evolution-12-mois")
+    public ResponseEntity<List<Map<String, Object>>> evolution12Mois(
+            @RequestParam(required = false) Client client
+    ) {
+        return ResponseEntity.ok(
+                demandeEssaiService.evolutionEssais12Mois(client)
+        );
     }
-    @GetMapping("evolutionSemaine")
-    public List<Map<String, Object>> evolutionParSemaine(@RequestParam int month) {
-        return demandeEssaiService.evolutionEssaisParSemaine(month);
-    }
-    @GetMapping("/countTotal")
-    public long getTotalDemandes() {
-        return demandeEssaiService.getTotalDemandes();
+    @GetMapping("/evolution-semaine")
+    public List<Map<String, Object>> evolutionParSemaine(
+            @RequestParam int month,
+            @RequestParam(required = false) Client client
+    ) {
+        return demandeEssaiService.evolutionEssaisParSemaine(month, client);
     }
 
-    @GetMapping("/planifierToday")
-    public long nombreEssaisAujourdHui() {
-        return demandeEssaiService.getNombreEssaisAujourdHui();
+    @GetMapping("/countTotal")
+    public long getTotalDemandes(
+            @RequestParam(required = false) Client client
+    ) {
+        return demandeEssaiService.getTotalDemandes(Optional.ofNullable(client));
+    }
+    @GetMapping("/demandesBystatus")
+    public Map<String, Long> getStats(
+            @RequestParam(required = false) Client client) {
+
+        return demandeEssaiService.countDemandesByStatut(Optional.ofNullable(client));
     }
 }

@@ -2,11 +2,14 @@ package com.FEV.SmartTest.Controller;
 
 
 import com.FEV.SmartTest.Entity.LoiRoute;
+import com.FEV.SmartTest.Enum.Client;
+
 import com.FEV.SmartTest.Service.LoiRouteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/lois-route")
@@ -31,13 +34,14 @@ import java.util.List;
             List<LoiRoute> lois = loiRouteService.getAllLoisRouteClient();
             return ResponseEntity.ok(lois);
         }
-       @GetMapping("/count")
-       public long getLoiCount() {
-         return loiRouteService.getLoiCount();
-       }
-
-        @GetMapping("/{id}")
-        public ResponseEntity<LoiRoute> getLoiRouteById(@PathVariable Long id) {
+    @GetMapping("/count")
+    public long getLoiCount(
+            @RequestParam(required = false) Client client
+    ) {
+        return loiRouteService.getLoiCount(Optional.ofNullable(client));
+    }
+    @GetMapping("/{id}")
+     public ResponseEntity<LoiRoute> getLoiRouteById(@PathVariable Long id) {
             LoiRoute lr = loiRouteService.getAllLoisRoute().stream()
                     .filter(l -> l.getId().equals(id))
                     .findFirst()

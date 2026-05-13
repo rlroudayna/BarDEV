@@ -1,11 +1,15 @@
 package com.FEV.SmartTest.Controller;
 
+import com.FEV.SmartTest.DTO.ChangePasswordRequest;
 import com.FEV.SmartTest.Entity.User;
 import com.FEV.SmartTest.Service.CustomUserDetailsService;
 import com.FEV.SmartTest.Service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -61,12 +65,11 @@ public class UserController {
         return ResponseEntity.ok(currentUser.get());
     }
     @PutMapping("/{id}/image")
-    public ResponseEntity<User> updateProfileImage(
+    public ResponseEntity<User> updateImage(
             @PathVariable Long id,
-            @RequestBody String image
+            @RequestParam("file") MultipartFile file
     ) {
-        User updatedUser = userService.updateProfileImage(id, image);
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(userService.updateProfileImage(id, file));
     }
 
     @PutMapping("/{id}/phone")
@@ -76,5 +79,30 @@ public class UserController {
     ) {
         User updatedUser = userService.updatePhone(id, phone);
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/me/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @RequestBody ChangePasswordRequest request
+    ) {
+        userService.changePassword(request);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Mot de passe modifié avec succès")
+        );
+    }
+    @GetMapping("/technicien-essai/client")
+    public List<User> getChargeEssaiByClient() {
+        return userService.getTechnicienEssaiByCurrentUserClient();
+    }
+    @PostMapping("/forgot-password")
+    public void forgot(@RequestBody Map<String, String> request) {
+        userService.forgotPassword(request.get("email"));
+    }
+
+    @PostMapping("/reset-password")
+    public void reset(@RequestParam String token,
+                      @RequestParam String password) {
+        userService.resetPassword(token, password);
     }
 }

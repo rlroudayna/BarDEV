@@ -2,10 +2,13 @@ package com.FEV.SmartTest.Service;
 
 import com.FEV.SmartTest.Entity.Calage;
 import com.FEV.SmartTest.Entity.User;
+import com.FEV.SmartTest.Enum.Client;
+import com.FEV.SmartTest.Enum.Role;
 import com.FEV.SmartTest.Repository.CalageRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CalageService {
@@ -17,19 +20,10 @@ public class CalageService {
         this.userDetailsService = userDetailsService;
     }
 
-    // Vérifie si l'utilisateur connecté a le rôle CHARGE_ESSAI
-    private void checkCharge() {
-        User currentUser = userDetailsService.getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        if (!"CHARGE_ESSAI".equals(currentUser.getRole().name())) {
-            throw new RuntimeException("Action réservée aux conducteurs");
-        }
-    }
 
     // CREATE
     public Calage createCalage(Calage calage) {
-        checkCharge();
         return calageRepository.save(calage);
     }
 
@@ -40,7 +34,6 @@ public class CalageService {
 
     // UPDATE
     public Calage updateCalage(Long id, Calage updatedCalage) {
-        // checkCharge();
         return calageRepository.findById(id).map(c -> {
             c.setNom(updatedCalage.getNom());
             c.setClient(updatedCalage.getClient());
@@ -58,12 +51,27 @@ public class CalageService {
 
     // DELETE
     public void deleteCalage(Long id) {
-        //checkCharge();
+
         calageRepository.deleteById(id);
     }
+    public long getCalageCount(Optional<Client> clientOpt) {
 
-    public long getCalageCount() {
-        return calageRepository.count();
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        Client client;
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            client = clientOpt.orElse(null); // admin peut filtrer
+        } else {
+            client = currentUser.getClient(); // user → son client
+        }
+
+        if (client == null) {
+            return calageRepository.count();
+        }
+
+        return calageRepository.countByClient(client);
     }
 
     public List<Calage> getAllCalagesClient() {
@@ -71,7 +79,9 @@ public class CalageService {
         User currentUser = userDetailsService.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        return calageRepository.findByClient(currentUser.getClient());
+        return currentUser.getRole() == Role.ADMIN
+                ? calageRepository.findAll()
+                : calageRepository.findByClient(currentUser.getClient());
     }
 
 

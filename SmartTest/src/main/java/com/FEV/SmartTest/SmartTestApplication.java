@@ -9,5 +9,4 @@ public class SmartTestApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SmartTestApplication.class, args);
 	}
-
 }

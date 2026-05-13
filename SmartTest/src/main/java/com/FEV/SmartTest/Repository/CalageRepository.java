@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface CalageRepository extends JpaRepository<Calage, Long> {
     List<Calage> findByClient(Client client);
+    long countByClient(Client client);
 
 }

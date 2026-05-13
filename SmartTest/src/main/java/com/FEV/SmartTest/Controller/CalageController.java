@@ -1,11 +1,13 @@
 package com.FEV.SmartTest.Controller;
 
 import com.FEV.SmartTest.Entity.Calage;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Service.CalageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/calages")
@@ -31,8 +33,10 @@ public class CalageController {
         return ResponseEntity.ok(calageService.getAllCalagesClient());
     }
     @GetMapping("/count")
-    public long getCalageCount() {
-        return calageService.getCalageCount();
+    public long getCalageCount(
+            @RequestParam(required = false) Client client
+    ) {
+        return calageService.getCalageCount(Optional.ofNullable(client));
     }
 
     // READ ONE

@@ -3,11 +3,13 @@ package com.FEV.SmartTest.Service;
 import com.FEV.SmartTest.Entity.User;
 import com.FEV.SmartTest.Entity.Vehicule;
 import com.FEV.SmartTest.Enum.Client;
+import com.FEV.SmartTest.Enum.Role;
 import com.FEV.SmartTest.Repository.VehiculeRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VehiculeService {
@@ -20,16 +22,11 @@ public class VehiculeService {
         this.userDetailsService = userDetailsService;
     }
     // Vérifie si l'utilisateur connecté est conducteur
-    private void checkCharge() {
-        User currentUser = userDetailsService.getCurrentUser()
-                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        if (!"CHARGE_ESSAI".equals(currentUser.getRole().name())) {
-            throw new RuntimeException("Action réservée aux conducteurs");
-        }
-    }
     public Vehicule createVehicule(Vehicule vehicule) {
-        //checkCharge();
+
+        vehicule.setIdentificateur(generateIdentificateur());
+
         return vehiculeRepository.save(vehicule);
     }
     public Vehicule getVehiculeById(Long id) {
@@ -42,10 +39,9 @@ public class VehiculeService {
     }
 
     public Vehicule updateVehicule(Long id, Vehicule updatedVehicule) {
-        checkCharge();
+
         return vehiculeRepository.findById(id).map(v -> {
             v.setNomAppliImmat(updatedVehicule.getNomAppliImmat());
-            v.setIdentificateur(updatedVehicule.getIdentificateur());
             v.setImmatriculation(updatedVehicule.getImmatriculation());
             v.setMarque(updatedVehicule.getMarque());
             v.setVin(updatedVehicule.getVin());
@@ -71,30 +67,76 @@ public class VehiculeService {
     }
 
     public void deleteVehicule(Long id) {
-        checkCharge();
+
         vehiculeRepository.deleteById(id);
     }
 
     public Vehicule duplicateVehicule(Long id) {
-        checkCharge();
+
         Vehicule v = vehiculeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Véhicule non trouvé avec id : " + id));
+
         Vehicule duplicate = new Vehicule();
-        BeanUtils.copyProperties(v, duplicate, "id"); // copier tout sauf l'ID
+
+        // ne pas copier id et identificateur
+        BeanUtils.copyProperties(v, duplicate, "id", "identificateur");
+
+        // générer un nouvel identificateur
+        duplicate.setIdentificateur(generateIdentificateur());
+
         return vehiculeRepository.save(duplicate);
     }
 
-    public long getVehiculeCount() {
-        return vehiculeRepository.count();
-    }
+    public long getVehiculeCount(Optional<Client> clientOpt) {
 
-
-    public List<Vehicule> getAllVehiculesClient() {
         User currentUser = userDetailsService.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
 
-        Client client = currentUser.getClient();
+        Client client;
 
+        if (currentUser.getRole() == Role.ADMIN) {
+            client = clientOpt.orElse(null);
+        } else {
+            client = currentUser.getClient();
+        }
+
+        if (client == null) {
+            return vehiculeRepository.count();
+        }
+
+        return vehiculeRepository.countByClient(client);
+    }
+
+    public List<Vehicule> getVehiculesSelonRole() {
+        User currentUser = userDetailsService.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Utilisateur non authentifié"));
+
+        // Si l'utilisateur est ADMIN → accès à tout
+        if (currentUser.getRole() == Role.ADMIN) {
+            return vehiculeRepository.findAll();
+        }
+
+        // Sinon → filtrer par client
+        Client client = currentUser.getClient();
         return vehiculeRepository.findByClient(client);
+    }
+    private String generateIdentificateur() {
+
+        Vehicule lastVehicule = vehiculeRepository.findTopByOrderByIdDesc().orElse(null);
+
+        int nextNumber = 1;
+
+        if (lastVehicule != null && lastVehicule.getIdentificateur() != null) {
+            String lastId = lastVehicule.getIdentificateur();
+            if (lastId.contains("-")) {
+
+                String[] parts = lastId.split("-");
+
+                if (parts.length == 2) {
+                    nextNumber = Integer.parseInt(parts[1]) + 1;
+                }
+            }
+        }
+        return String.format("AB-%04d", nextNumber);
     }
 }

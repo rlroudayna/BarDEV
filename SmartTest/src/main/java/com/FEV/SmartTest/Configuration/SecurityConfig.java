@@ -43,7 +43,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ton front
+        configuration.setAllowedOrigins(List.of("http://172.24.208.1/:5173","http://localhost:5173")); // ton front
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*")); // inclut Authorization
         configuration.setAllowCredentials(true);
@@ -58,9 +58,15 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- ici
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/api/auth/**", "/api/users/**").permitAll()
+                        .requestMatchers(
+                                "/login",
+                                "/api/auth/**",
+                                "/api/users/**",
+                                "/uploads/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(new JwtFilter(customUserDetailsService, jwtUtils),
                         UsernamePasswordAuthenticationFilter.class)
                 .build();

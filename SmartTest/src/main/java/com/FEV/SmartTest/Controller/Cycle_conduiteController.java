@@ -1,11 +1,13 @@
 package com.FEV.SmartTest.Controller;
 
 import com.FEV.SmartTest.Entity.CycleConduite;
+import com.FEV.SmartTest.Enum.Client;
 import com.FEV.SmartTest.Service.CycleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/cycles")
@@ -56,8 +58,9 @@ public class Cycle_conduiteController {
         return ResponseEntity.noContent().build();
     }
     @GetMapping("/count")
-    public long getCycleCount() {
-        return cycleService.getCycleCount();
+    public long getCycleCount(
+            @RequestParam(required = false) Client client
+    ) {
+        return cycleService.getCycleCount(Optional.ofNullable(client));
     }
-
 }
