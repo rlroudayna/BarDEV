@@ -114,6 +114,14 @@ export function LoisDeRoute() {
 
     fetchUser();
   }, []);
+  useEffect(() => {
+    if (userClient && modalMode === "add") {
+      setNewLois((prev) => ({
+        ...prev,
+        client: userClient as Client,
+      }));
+    }
+  }, [userClient, modalMode]);
   const addLois = async (newLois: Lois) => {
     try {
       const created = await authFetch("/lois-route", {
@@ -131,11 +139,17 @@ export function LoisDeRoute() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ✅ On construit l'objet final à envoyer
+    const loisToSave: Lois = {
+      ...newLois,
+      client: userClient as Client, // force le client connecté
+    };
+
     try {
       if (modalMode === "edit" && selectedLois?.id) {
         const updated = await authFetch(`/lois-route/${selectedLois.id}`, {
           method: "PUT",
-          body: JSON.stringify(newLois),
+          body: JSON.stringify(loisToSave),
         });
 
         setLois((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
@@ -144,7 +158,7 @@ export function LoisDeRoute() {
       } else {
         const created = await authFetch("/lois-route", {
           method: "POST",
-          body: JSON.stringify(newLois),
+          body: JSON.stringify(loisToSave),
         });
 
         setLois((prev) => [...prev, created]);
@@ -152,6 +166,7 @@ export function LoisDeRoute() {
         toast.success("Loi ajoutée avec succès !");
       }
 
+      // reset propre du formulaire
       setShowModal(false);
       setNewLois(INITIAL_LOIS);
     } catch (err) {
@@ -205,15 +220,15 @@ export function LoisDeRoute() {
   }, []);
   useEffect(() => {
     if (modalMode !== "add") return;
-    if (!newLois.client || !newLois.norme) return;
+    if (!userClient || !newLois.norme) return;
 
-    const generatedName = `Loi_${newLois.client}_${newLois.norme}`;
+    const generatedName = `Loi_${userClient}_${newLois.norme}`;
 
     setNewLois((prev) => ({
       ...prev,
       nom: generatedName,
     }));
-  }, [newLois.client, newLois.norme, modalMode]);
+  }, [userClient, newLois.norme, modalMode]);
   return (
     <div className="space-y-5  p-3">
       <div>
@@ -444,11 +459,11 @@ export function LoisDeRoute() {
                         </button>
                         <button
                           onClick={() => {
-                            if (selectedLois?.id != null) {
-                              deleteLois(selectedLois.id);
+                            if (loisToDelete?.id != null) {
+                              deleteLois(loisToDelete.id);
                             }
                             setShowConfirmDelete(false);
-                            setSelectedLois(null);
+                            setLoisToDelete(null);
                           }}
                           className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                         >

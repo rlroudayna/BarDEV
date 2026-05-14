@@ -75,7 +75,27 @@ export function Planning() {
     "Vendredi",
     "Samedi",
   ];
+  function getWeekDays(offsetWeeks: number = 0) {
+    const now = new Date();
 
+    const monday = new Date(now);
+    const day = monday.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    monday.setDate(monday.getDate() + diff + offsetWeeks * 7);
+
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+
+      return {
+        dayName: d.toLocaleDateString("fr-FR", { weekday: "long" }),
+        date: d.toISOString().split("T")[0], // format YYYY-MM-DD
+        label: `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`,
+      };
+    });
+  }
   const { monday } = getWeekDateRange(weekOffset);
 
   /* ================= FETCH ================= */
@@ -95,31 +115,27 @@ export function Planning() {
 
   /* ================= TRANSFORM DATA ================= */
 
+  const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
+
   const planningData: DayPlanning[] = useMemo(() => {
-    const map: Record<string, DayPlanning> = {};
+    return weekDays.map((d) => {
+      const slots = demandes
+        .filter((x) => x.datePlanification?.startsWith(d.date))
+        .map((d) => ({
+          time: d.shift ?? "MATIN",
+          numeroProjet: d.numerProjet?.toString() ?? "",
+          date: d.datePlanification,
+          NomDemande: d.nomAuto ?? "",
+          driver: d.demandeur ?? "",
+          shift: d.shift,
+        }));
 
-    daysMap.forEach((day) => {
-      map[day] = { day, slots: [] };
+      return {
+        day: `${d.dayName} ${d.label}`, // 👈 JOUR + DATE
+        slots,
+      };
     });
-
-    demandes.forEach((d) => {
-      if (!d.datePlanification) return;
-
-      const date = new Date(d.datePlanification);
-      const dayName = daysMap[date.getDay()];
-
-      map[dayName].slots.push({
-        time: d.shift ?? "MATIN",
-        numeroProjet: d.numerProjet?.toString() ?? "",
-        date: d.datePlanification,
-        NomDemande: d.nomAuto ?? "",
-        driver: d.demandeur ?? "",
-        shift: d.shift,
-      });
-    });
-
-    return Object.values(map);
-  }, [demandes]);
+  }, [demandes, weekDays]);
 
   /* ================= FILTER ================= */
 
@@ -193,7 +209,12 @@ export function Planning() {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-
+        <button
+          onClick={() => setWeekOffset(0)}
+          className="h-10 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm"
+        >
+          Aujourd’hui
+        </button>
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center w-full">
           {/* Projet */}
@@ -311,43 +332,42 @@ export function Planning() {
   /* ================= LIST VIEW ================= */
 
   function ListView({ planning }: { planning: DayPlanning[] }) {
-  return (
-    <div className="space-y-4">
-      {planning.map((day) => (
-        <div
-          key={day.day}
-          className="bg-card border border-border p-3 rounded-xl shadow-sm"
-        >
-          <h2 className="font-bold mb-2 text-foreground">
-            {day.day}
-          </h2>
+    return (
+      <div className="space-y-4">
+        {planning.map((day) => (
+          <div
+            key={day.day}
+            className="bg-card border border-border p-3 rounded-xl shadow-sm"
+          >
+            <h2 className="font-bold mb-2 text-foreground">{day.day}</h2>
 
-          {day.slots.map((slot, i) => (
-            <div
-              key={i}
-              className={`p-2 mb-2 rounded border border-border bg-background text-foreground ${getSlotColor(
-                slot.shift,
-              )}`}
-            >
-              <span className="text-xs font-semibold text-foreground/90">
-                {slot.time}
-              </span>
+            {day.slots.map((slot, i) => (
+              <div
+                key={i}
+                className={`p-2 mb-2 rounded border border-border bg-background text-foreground ${getSlotColor(
+                  slot.shift,
+                )}`}
+              >
+                <span className="text-xs font-semibold text-foreground/90">
+                  {slot.time}
+                </span>
 
-              {" - "}
+                {" - "}
 
-              <span className="text-sm font-medium text-foreground">
-                {slot.NomDemande}
-              </span>
+                <span className="text-sm font-medium text-foreground">
+                  {slot.NomDemande}
+                </span>
 
-              {" - "}
+                {" - "}
 
-              <span className="text-xs text-muted-foreground">
-                {slot.driver}
-              </span>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}}
+                <span className="text-xs text-muted-foreground">
+                  {slot.driver}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+}

@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { authFetch } from "../api";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Vehicule {
   id: number;
@@ -31,6 +32,11 @@ interface LoiRoute {
   f0?: number;
   f1?: number;
   f2?: number;
+}
+export interface ValidationTechnicien {
+  id?: number;
+  decision?: "OK" | "NOK" | "OK_SOUS_RESERVE";
+  commentaire?: string;
 }
 interface DemandeEssai {
   // =====================
@@ -202,6 +208,7 @@ interface DemandeEssai {
   indicesondeLambdaLA4?: number;
   numerosondeLambdaLA4?: number;
   typeMesuresondeLambdaLA4?: string;
+  validationTechnicien?: ValidationTechnicien;
 }
 
 export function ValidationConducteur() {
@@ -209,8 +216,14 @@ export function ValidationConducteur() {
   const [demande, setDemande] = useState<DemandeEssai | null>(null);
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [comment, setComment] = useState("");
 
+  const activeStatus =
+    selectedStatus ?? demande?.validationTechnicien?.decision;
+  const [comment, setComment] = useState("");
+  const isValidated = ["OK", "NOK", "OK_SOUS_RESERVE"].includes(
+    demande?.validationTechnicien?.decision ?? "",
+  );
+  const isReadOnly = isValidated;
   const handleSubmit = async () => {
     try {
       if (!selectedStatus) return;
@@ -231,7 +244,20 @@ export function ValidationConducteur() {
       console.error("Erreur validation", error);
     }
   };
+  useEffect(() => {
+    if (demande?.validationTechnicien) {
+      setSelectedStatus(demande.validationTechnicien.decision ?? null);
+      setComment(demande.validationTechnicien.commentaire ?? "");
+    }
+  }, [demande]);
 
+  useEffect(() => {
+    if (!demande) return;
+
+    if (demande.validationTechnicien?.decision) {
+      toast.success("Cet essai a déjà été validé et est en lecture seule.");
+    }
+  }, [demande]);
   useEffect(() => {
     const fetchDemande = async () => {
       try {
@@ -330,13 +356,16 @@ export function ValidationConducteur() {
           </table>
         </div>
       </div>
-
       {/* Options de validation compactes */}
       <div className="grid grid-cols-3 gap-2">
         <button
-          onClick={() => setSelectedStatus("OK")}
+          disabled={isReadOnly}
+          onClick={() => {
+            if (isReadOnly) return;
+            setSelectedStatus("OK");
+          }}
           className={`p-3 rounded-lg border-2 transition-all ${
-            selectedStatus === "OK"
+            activeStatus === "OK"
               ? "bg-[#E8F5E9] border-[#2E7D32]"
               : "bg-white border-[#E0E0E0] hover:border-[#2E7D32]"
           }`}
@@ -349,9 +378,10 @@ export function ValidationConducteur() {
         </button>
 
         <button
+          disabled={isReadOnly}
           onClick={() => setSelectedStatus("NOK")}
           className={`p-3 rounded-lg border-2 transition-all ${
-            selectedStatus === "NOK"
+            activeStatus === "NOK"
               ? "bg-[#FFEBEE] border-[#C62828]"
               : "bg-white border-[#E0E0E0] hover:border-[#C62828]"
           }`}
@@ -364,9 +394,10 @@ export function ValidationConducteur() {
         </button>
 
         <button
+          disabled={isReadOnly}
           onClick={() => setSelectedStatus("OK_SOUS_RESERVE")}
           className={`p-3 rounded-lg border-2 transition-all ${
-            selectedStatus === "OK_SOUS_RESERVE"
+            activeStatus === "OK_SOUS_RESERVE"
               ? "bg-[#FFF3E0] border-[#ED6C02]"
               : "bg-white border-[#E0E0E0] hover:border-[#ED6C02]"
           }`}
@@ -388,12 +419,12 @@ export function ValidationConducteur() {
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          disabled={isValidated}
           rows={4}
           className="w-full px-4 py-3 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#E30613] resize-none"
           placeholder="Décrivez le déroulement de l'essai, le comportement du véhicule, les problèmes rencontrés..."
         />
       </div>
-
       {/* Boutons */}
       {/* Boutons */}
       <div className="flex justify-end gap-95 mt-8">
@@ -404,14 +435,17 @@ export function ValidationConducteur() {
           Annuler
         </button>
 
-        <button
-          onClick={handleSubmit}
-          disabled={!selectedStatus}
-          className="px-20 py-2.5 bg-white border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
-        >
-          Valider l'essai
-        </button>
+        {!isValidated && (
+          <button
+            onClick={handleSubmit}
+            disabled={!selectedStatus}
+            className="px-20 py-2.5 bg-white border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
+          >
+            Valider l'essai
+          </button>
+        )}
       </div>
+      
     </div>
   );
 }

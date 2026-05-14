@@ -71,7 +71,6 @@ const chargeValidationData = {
 };
 
 export function Dashboard() {
-  const [selectedMonth, setSelectedMonth] = useState("Jan");
   const [selectedTechnicien, setSelectedTechnicien] = useState(
     "Tous les techniciens",
   );
@@ -87,35 +86,23 @@ export function Dashboard() {
   const [loadingWeekly, setLoadingWeekly] = useState(false);
   const [barData, setBarData] = useState([]);
   const [role, setRole] = useState("");
-  const [availableMonths, setAvailableMonths] = useState<string[]>([
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-  ]);
-  const convertMonth = (m: string) => {
-  const map: Record<string, number> = {
-    Jan: 1,
-    Feb: 2,
-    Mar: 3,
-    Apr: 4,
-    May: 5,
-    Jun: 6,
-    Jul: 7,
-    Aug: 8,
-    Sep: 9,
-    Oct: 10,
-    Nov: 11,
-    Dec: 12,
-  };
+  const [selectedMonth, setSelectedMonth] = useState(1);
+ 
 
-  return map[m];
-};
+  const months = [
+    { label: "Janvier", value: 1 },
+    { label: "Février", value: 2 },
+    { label: "Mars", value: 3 },
+    { label: "Avril", value: 4 },
+    { label: "Mai", value: 5 },
+    { label: "Juin", value: 6 },
+    { label: "Juillet", value: 7 },
+    { label: "Août", value: 8 },
+    { label: "Septembre", value: 9 },
+    { label: "Octobre", value: 10 },
+    { label: "Novembre", value: 11 },
+    { label: "Décembre", value: 12 },
+  ];
   const [weeklyData, setWeeklyData] = useState([]);
   const getClientParam = () =>
     selectedClient === "Tous les clients" ? null : selectedClient;
@@ -209,36 +196,22 @@ export function Dashboard() {
     fetchCycleCount();
   }, [selectedClient]);
 
-  {
-    /*   { useEffect(() => {
-    const fetchTotalEssais = async () => {
-      try {
-        const data = await authFetch("/demandes-essai/countTotal");
-        setTotalEssais(data);
-      } catch (err) {
-        console.error("Erreur fetch total essais :", err);
-      }
+  useEffect(() => {
+    const fetchWeekly = async () => {
+      const client =
+        selectedClient === "Tous les clients" ? "" : selectedClient;
+
+      const monthNumber = selectedMonth;
+
+      const data = await authFetch(
+        `/demandes-essai/evolution-semaine?client=${client}&month=${monthNumber}`,
+      );
+
+      setWeeklyData(data);
     };
 
-    fetchTotalEssais();
-  }, []); */
-  }
-  useEffect(() => {
-  const fetchWeekly = async () => {
-    const client =
-      selectedClient === "Tous les clients" ? "" : selectedClient;
-
-    const monthNumber = convertMonth(selectedMonth);
-
-    const data = await authFetch(
-      `/demandes-essai/evolution-semaine?client=${client}&month=${convertMonth}`
-    );
-
-    setWeeklyData(data);
-  };
-
-  fetchWeekly();
-}, [selectedClient, selectedMonth]);
+    fetchWeekly();
+  }, [selectedClient, selectedMonth]);
 
   useEffect(() => {
     const fetchTotalEssais = async () => {
@@ -360,20 +333,6 @@ export function Dashboard() {
     fetchEvolution12Mois();
   }, [selectedClient]);
 
-  useEffect(() => {
-    const fetchWeekly = async () => {
-      const client =
-        selectedClient === "Tous les clients" ? "" : selectedClient;
-
-      const data = await authFetch(
-        `/demandes-essai/evolution-semaine?client=${client}&month=${selectedMonth}`,
-      );
-
-      setWeeklyData(data);
-    };
-
-    fetchWeekly();
-  }, [selectedClient, selectedMonth]);
   return (
     <div className="space-y-5 p-3">
       <div className="flex items-end justify-between">
@@ -540,16 +499,16 @@ export function Dashboard() {
             {/* SELECTS EN LIGNE */}
             <div className="flex gap-2 mb-6">
               <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-card text-foreground border border-border rounded-lg px-1 py-2 w-1/2"
-              >
-                {availableMonths.map((month) => (
-                  <option key={month} value={month}>
-                    {month}
-                  </option>
-                ))}
-              </select>
+  value={selectedMonth}
+  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+  className="bg-card text-foreground border border-border rounded-lg px-1 py-2 w-1/2"
+>
+  {months.map((m) => (
+    <option key={m.value} value={m.value}>
+      {m.label}
+    </option>
+  ))}
+</select>
             </div>
 
             {/* GRAPHIQUE */}

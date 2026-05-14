@@ -37,6 +37,9 @@ export enum Role {
   TECHNICIEN_ESSAI = "TECHNICIEN_ESSAI",
   EXTERNE = "EXTERNE",
 }
+export const StatutGlobalOptions = ["EN_COURS", "FAIT", "PAS_FAIT"] as const;
+
+export const StatutDemandeOptions = ["En_creation", "VALIDE"] as const;
 interface User {
   id?: number;
   nom: string;
@@ -165,7 +168,7 @@ export function Demandes() {
     numeroProjet?: number;
 
     statutGlobal?: "EN_COURS" | "FAIT" | "PAS_FAIT";
-    statutDemande?: "En_creation" | "VALIDEE";
+    statutDemande?: "En_creation" | "VALIDE";
 
     // =====================
     // RELATIONS (BACKEND)
@@ -328,15 +331,6 @@ export function Demandes() {
     typeMesuresondeLambdaLA4?: string;
   }
 
-  interface DemandeEssaiForm extends Omit<
-    DemandeEssai,
-    "vehicule" | "cycle" | "calage"
-  > {
-    vehiculeId?: number;
-    cycleId?: number;
-    calageId?: number;
-    loiId?: number;
-  }
   const [form, setForm] = useState<Partial<DemandeEssaiForm>>({
     // ===== IDENTITÉ =====
     nomAuto: "",
@@ -465,7 +459,7 @@ export function Demandes() {
     sondeLambdaLA4: false,
     indicesondeLambdaLA4: undefined,
     numerosondeLambdaLA4: undefined,
-    typeMesureSondeLambdaLA4: "",
+    typeMesuresondeLambdaLA4: "",
   });
   const openModal = (mode: ModalMode, demande?: DemandeEssai) => {
     setModalMode(mode);
@@ -669,57 +663,47 @@ export function Demandes() {
   };
   // --- LOGIQUE DE FILTRAGE MISE À JOUR ---
   const filteredDemandes = useMemo(() => {
-  return demandes.filter((d) => {
-    const matchSearch =
-      !search ||
-      d.nomAuto?.toLowerCase().includes(search.toLowerCase());
+    return demandes.filter((d) => {
+      const nomAuto = (d.nomAuto ?? "").toLowerCase();
+      const demandeur = (d.demandeur ?? "").toLowerCase();
+      const projet = String(d.numeroProjet ?? "").toLowerCase();
+      const statut = (d.statutGlobal ?? "").toLowerCase().trim();
+      const shift = (d.shift ?? "").toLowerCase().trim();
+      const validation = (d.statutGlobal ?? "").toLowerCase().trim();
+      const date = d.datePlanification?.slice(0, 10) ?? "";
 
-    const matchDemandeur =
-      !filterDemandeur ||
-      d.demandeur?.toLowerCase().includes(filterDemandeur.toLowerCase());
+      const matchSearch = !search || nomAuto.includes(search.toLowerCase());
 
-    const matchProjet =
-      !filterProjet ||
-      String(d.numeroProjet ?? "")
-        .toLowerCase()
-        .includes(filterProjet.toLowerCase());
+      const matchDemandeur =
+        !filterDemandeur || demandeur.includes(filterDemandeur.toLowerCase());
 
-    const matchStatut =
-      !filterStatut ||
-      d.statutGlobal?.toLowerCase().trim() === filterStatut.toLowerCase();
+      const matchProjet =
+        !filterProjet || projet.includes(filterProjet.toLowerCase());
 
-    const matchShift =
-      !filterShift ||
-      d.shift?.toLowerCase().trim() === filterShift.toLowerCase();
+      const matchStatut =
+        !filterStatut || statut === filterStatut.toLowerCase().trim();
 
-    const matchDate =
-      !filterDate ||
-      d.datePlanification?.slice(0, 10) === filterDate;
+        
 
-    const matchValidation =
-      !filterValidation ||
-      d.statutDemande === filterValidation;
+      const matchShift =
+        !filterShift || shift === filterShift.toLowerCase().trim();
 
-    return (
-      matchSearch &&
-      matchDemandeur &&
-      matchProjet &&
-      matchStatut &&
-      matchShift &&
-      matchDate &&
-      matchValidation
-    );
-  });
-}, [
-  demandes,
-  search,
-  filterDemandeur,
-  filterProjet,
-  filterStatut,
-  filterShift,
-  filterDate,
-  filterValidation,
-]); [
+      const matchDate = !filterDate || date === filterDate;
+
+      const matchValidation =
+        !filterValidation || d.statutGlobal === filterValidation;
+
+      return (
+        matchSearch &&
+        matchDemandeur &&
+        matchProjet &&
+        matchStatut &&
+        matchShift &&
+        matchDate &&
+        matchValidation
+      );
+    });
+  }, [
     demandes,
     search,
     filterDemandeur,
@@ -728,9 +712,8 @@ export function Demandes() {
     filterShift,
     filterDate,
     filterValidation,
-  ];
+  ]);
   useEffect(() => {
-    // On vérifie si les champs nécessaires sont remplis
     if (form.typeProjet || form.demandeur || form.vehiculeId) {
       const name = `${form.typeProjet || "PROJET"}_${form.demandeur || "NOM"}_${form.vehiculeId || "VEH"}_001`;
       setForm((prev) => ({ ...prev, nomAuto: name }));
@@ -821,9 +804,6 @@ export function Demandes() {
       toast.error("Erreur lors de la suppression");
     }
   };
-  useEffect(() => {
-    fetchDemandes();
-  }, []);
 
   const duplicateDemande = async (id: number) => {
     try {
@@ -952,18 +932,7 @@ export function Demandes() {
       toast.error("Erreur lors de la mise à jour");
     }
   };
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await authFetch("/users/me");
-        setRole(user.role);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  ;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -975,7 +944,6 @@ export function Demandes() {
         console.error(err);
       }
     };
-
     fetchUser();
   }, []);
 
@@ -996,7 +964,6 @@ export function Demandes() {
 
     loadTechniciens();
   }, []);
-  
 
   return (
     <div className="p-3 space-y-5 bg-gray-10 min-h-screen">
@@ -1066,7 +1033,7 @@ export function Demandes() {
           value={filterValidation}
           onChange={(e) => setFilterValidation(e.target.value)}
         >
-          <option value="">Tous</option>
+          <option value="">Validation (Tous)</option>
           <option value="EN_COURS">En cours</option>
           <option value="FAIT">Fait</option>
           <option value="PAS_FAIT">Pas fait</option>
@@ -1082,9 +1049,7 @@ export function Demandes() {
             onChange={(e) => setFilterDate(e.target.value)}
           />
         </div>
-        
       </div>
-      
 
       {/* --- TABLEAU --- */}
       <div className="bg-card rounded-xl border border-gray-300 shadow-sm overflow-x-auto">

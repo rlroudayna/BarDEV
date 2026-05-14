@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { authFetch } from "../api";
 import { CheckCircle, XCircle, AlertTriangle, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 interface Vehicule {
   id: number;
@@ -31,6 +32,13 @@ interface LoiRoute {
   f0?: number;
   f1?: number;
   f2?: number;
+}
+interface validationCharge {
+  id?: number;
+  validation?: "OK" | "NOK" | "OK_SOUS_RESERVE";
+  commentaire?: string;
+  oetbRenseigne?: boolean;
+  dateValidation?: string;
 }
 interface DemandeEssai {
   // =====================
@@ -202,6 +210,7 @@ interface DemandeEssai {
   indicesondeLambdaLA4?: number;
   numerosondeLambdaLA4?: number;
   typeMesuresondeLambdaLA4?: string;
+  validationCharge?: ValidationCharge;
 }
 
 const checklistData = [
@@ -221,6 +230,11 @@ export function ValidationCharge() {
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [comment, setComment] = useState("");
+  const isValidated = ["OK", "NOK", "OK_SOUS_RESERVE"].includes(
+    demande?.validationCharge?.validation ?? "",
+  );
+
+  const isReadOnly = isValidated;
 
   const [oetbChecked, setOetbChecked] = useState(false);
 
@@ -260,6 +274,19 @@ export function ValidationCharge() {
 
     if (id) fetchDemande();
   }, [id]);
+  useEffect(() => {
+    if (isValidated) {
+      toast.success("Cet essai est déjà validé et ne peut plus être modifié.");
+    }
+  }, [isValidated]);
+
+  useEffect(() => {
+    if (demande?.validationCharge) {
+      setSelectedStatus(demande.validationCharge.validation ?? null);
+      setComment(demande.validationCharge.commentaire ?? "");
+      setOetbChecked(demande.validationCharge.oetbRenseigne ?? false);
+    }
+  }, [demande]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -373,7 +400,8 @@ export function ValidationCharge() {
         </h3>
         <div className="grid grid-cols-3 gap-4">
           <button
-            onClick={() => setSelectedStatus("OK")}
+            disabled={isReadOnly}
+            onClick={() => !isReadOnly && setSelectedStatus("OK")}
             className={`p-4 rounded-lg border-2 transition-all ${
               selectedStatus === "OK"
                 ? "bg-[#E8F5E9] border-[#2E7D32]"
@@ -385,7 +413,8 @@ export function ValidationCharge() {
           </button>
 
           <button
-            onClick={() => setSelectedStatus("NOK")}
+            disabled={isReadOnly}
+            onClick={() => !isReadOnly && setSelectedStatus("NOK")}
             className={`p-4 rounded-lg border-2 transition-all ${
               selectedStatus === "NOK"
                 ? "bg-[#FFEBEE] border-[#C62828]"
@@ -397,7 +426,8 @@ export function ValidationCharge() {
           </button>
 
           <button
-            onClick={() => setSelectedStatus("OK_SOUS_RESERVE")}
+            disabled={isReadOnly}
+            onClick={() => !isReadOnly && setSelectedStatus("OK_SOUS_RESERVE")}
             className={`p-4 rounded-lg border-2 transition-all ${
               selectedStatus === "OK_SOUS_RESERVE"
                 ? "bg-[#FFF3E0] border-[#ED6C02]"
@@ -411,6 +441,7 @@ export function ValidationCharge() {
         <label className="flex items-center gap-3 cursor-pointer p-6">
           <input
             type="checkbox"
+            disabled={isReadOnly}
             checked={oetbChecked}
             onChange={(e) => setOetbChecked(e.target.checked)}
             className="w-5 h-5 text-black rounded focus:[#E30613]"
@@ -420,35 +451,38 @@ export function ValidationCharge() {
       </div>
       {/* OETB */}
 
-      {/* Commentaire */}
+      {/* Commentaire 
       <div className="bg-white rounded-xl shadow-sm p-6">
         <label className="block text-lg font-semibold mb-3">
           Commentaire de chargé d'essai
         </label>
         <textarea
+          disabled={isReadOnly}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={3}
           className="w-full px-4 py-3 border border-[#E0E0E0] rounded-lg focus:outline-none focus:border-[#E30613] resize-none"
           placeholder="Décrivez le déroulement de l'essai, le comportement du véhicule, les problèmes rencontrés..."
         />
-      </div>
+      </div>*/}
       {/* Boutons */}
       <div className="flex justify-end gap-12 mt-8">
         <button
           onClick={() => navigate("/app/validation")}
-          className="px-8 py-2.5 bg-white border-2 border-gray  text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
+          className="px-8 py-2.5 bg-white border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
         >
           Annuler
         </button>
 
-        <button
-          onClick={handleSubmit}
-          disabled={!selectedStatus}
-          className="px-10 py-2.5 bg-white border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
-        >
-          Valider l'essai
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSubmit}
+            disabled={!selectedStatus}
+            className="px-10 py-2.5 bg-white border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
+          >
+            Valider l'essai
+          </button>
+        )}
       </div>
     </div>
   );

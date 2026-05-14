@@ -695,7 +695,7 @@ focus:outline-none focus:ring-2 focus:ring-ring transition"
 
                   <select
                     name="localisation"
-                    required 
+                    required
                     defaultValue=""
                     disabled={modalMode === "view"}
                     className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
