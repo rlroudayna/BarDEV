@@ -40,15 +40,17 @@ public interface DemandeEssaiRepository extends JpaRepository<DemandeEssai, Long
     List<Object[]> countByMonthAndStatut(@Param("year") int year);
 
     @Query("""
-select extract(week from d.datePlanification),
-       d.statutGlobal,
-       count(d.id)
-from DemandeEssai d
-where extract(year from d.datePlanification) = :year
-and extract(month from d.datePlanification) = :month
-and (:client is null or d.client = :client)
-group by extract(week from d.datePlanification), d.statutGlobal
-order by extract(week from d.datePlanification)
+SELECT 
+(EXTRACT(WEEK FROM d.datePlanification) - 
+ EXTRACT(WEEK FROM DATE_TRUNC('month', d.datePlanification)) + 1),
+d.statutGlobal,
+COUNT(d.id)
+FROM DemandeEssai d
+WHERE EXTRACT(YEAR FROM d.datePlanification) = :year
+AND EXTRACT(MONTH FROM d.datePlanification) = :month
+AND (:client IS NULL OR d.client = :client)
+GROUP BY 1, d.statutGlobal
+ORDER BY 1
 """)
     List<Object[]> countByWeekAndStatut(int year, int month, Client client);
 

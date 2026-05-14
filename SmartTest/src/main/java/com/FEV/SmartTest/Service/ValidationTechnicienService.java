@@ -10,10 +10,7 @@ import com.FEV.SmartTest.Repository.ValidationTechnicienRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -42,7 +39,21 @@ public class ValidationTechnicienService {
         DemandeEssai demande = demandeRepo.findById(demandeId)
                 .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
 
-        ValidationTechnicien validation = new ValidationTechnicien();
+        Optional<ValidationTechnicien> existing =
+                validationTechnicienRepo.findByDemandeEssaiId(demandeId);
+
+        if (existing.isPresent()) {
+            ValidationTechnicien validationExistante = existing.get();
+
+            // si déjà validée avec une décision finale
+            if (validationExistante.getDecision() != null) {
+                throw new RuntimeException("Cette demande est déjà validé ");
+            }
+        }
+
+        // 🟢 CREATE NEW VALIDATION
+        ValidationTechnicien validation = existing.orElse(new ValidationTechnicien());
+
         validation.setDemandeEssai(demande);
         validation.setDecision(decision);
         validation.setCommentaire(commentaire);
@@ -50,12 +61,11 @@ public class ValidationTechnicienService {
 
         ValidationTechnicien saved = validationTechnicienRepo.save(validation);
 
-        // Mise à jour du statut global
+        // 🔄 update statut global
         demandeEssaiService.mettreAJourStatut(demandeId);
 
         return saved;
     }
-
   {/* public List<Map<String, Object>> getTechnicienValidationStats(Long technicienId) {
 
         List<Object[]> results;

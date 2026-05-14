@@ -36,6 +36,10 @@ public class ValidationChargeService {
         DemandeEssai demande = demandeRepo.findById(demandeId)
                 .orElseThrow(() -> new RuntimeException("Demande non trouvée"));
 
+        if (validationRepo.existsByDemandeEssaiId(demandeId)) {
+            throw new IllegalStateException("Cet essai est déjà validé");
+        }
+
         validationCharge.setDemandeEssai(demande);
         validationCharge.setDateValidation(LocalDate.now());
 

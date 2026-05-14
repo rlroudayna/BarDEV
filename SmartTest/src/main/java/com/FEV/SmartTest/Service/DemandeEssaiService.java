@@ -452,7 +452,8 @@ public class DemandeEssaiService {
 
         List<Map<String, Object>> weeks = new ArrayList<>();
 
-        for (int i = 1; i <= 4; i++) {
+
+        for (int i = 1; i <= 5; i++) {
             Map<String, Object> w = new HashMap<>();
             w.put("week", "S" + i);
             w.put("Fait", 0);

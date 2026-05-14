@@ -8,13 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ValidationTechnicienRepository extends JpaRepository<ValidationTechnicien, Long> {
     List<ValidationTechnicien> findByUserId(Long Id);
 
-    List<ValidationTechnicien> findByDemandeEssaiId(Long Id);
 
     boolean existsByDemandeEssaiId(Long demandeId);
-
+    Optional<ValidationTechnicien> findByDemandeEssaiId(Long demandeId);
 
 }
