@@ -112,6 +112,8 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody String phone
     ) {
+        phone = phone.replace("\"", "").trim();
+
         User updatedUser = userService.updatePhone(id, phone);
         return ResponseEntity.ok(updatedUser);
     }

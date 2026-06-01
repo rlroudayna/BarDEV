@@ -17,4 +17,5 @@ public interface ValidationTechnicienRepository extends JpaRepository<Validation
     boolean existsByDemandeEssaiId(Long demandeId);
 
     Optional<ValidationTechnicien> findByDemandeEssaiId(Long demandeId);
+    void deleteByDemandeEssaiId(Long demandeEssaiId);
 }

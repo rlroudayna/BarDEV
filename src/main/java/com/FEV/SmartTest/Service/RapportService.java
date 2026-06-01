@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +37,7 @@ public class RapportService {
         this.demandeEssaiRepository = demandeEssaiRepository;
         this.clientRepository = clientRepository;
     }
-    private final String uploadDir = "uploads/rapports/";
+    private final String uploadDir = Paths.get("uploads", "rapports").toAbsolutePath().toString();
 
 
 
@@ -68,10 +69,9 @@ public class RapportService {
             throw new RuntimeException("Fichier vide");
         }
 
-        // 🔥 3. Sauvegarde fichier
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String filePath = uploadDir + fileName;
 
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String filePath = uploadDir + File.separator + fileName;
         file.transferTo(new File(filePath));
 
         // 🔥 4. Récupération relations DB
@@ -169,7 +169,7 @@ public class RapportService {
             rapport.setFilePath(filePath);
         }
 
-        // 🔥 5. Save
+
         return rapportRepository.save(rapport);
     }
     public void deleteRapport(Long id) {

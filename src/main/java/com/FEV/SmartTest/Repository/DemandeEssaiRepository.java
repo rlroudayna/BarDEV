@@ -14,6 +14,8 @@ public interface DemandeEssaiRepository extends JpaRepository<DemandeEssai, Long
     long countByClient(Client client);
     long countByStatutGlobal(StatutGlobal statutGlobal);
     long countByStatutGlobalAndClient(StatutGlobal statutGlobal ,Client client) ;
+
+
     @Query("""
     SELECT MONTH(d.datePlanification), d.statutGlobal, COUNT(d)
     FROM DemandeEssai d
@@ -26,6 +28,8 @@ public interface DemandeEssaiRepository extends JpaRepository<DemandeEssai, Long
             @Param("year") int year,
             @Param("client") Client client
     );
+
+
     @Query("""
         SELECT MONTH(d.datePlanification), d.statutGlobal, COUNT(d)
         FROM DemandeEssai d
@@ -98,4 +102,29 @@ GROUP BY
     v.validation
 """)
     List<Object[]> countValidationByCharge(@Param("client") Client client);
+
+    @Query("""
+SELECT 
+    u.id,
+    u.nom,
+    u.prenom,
+    v.validation,
+    COUNT(v.id)
+FROM User u
+LEFT JOIN ValidationCharge v ON v.charge.id = u.id
+LEFT JOIN DemandeEssai d ON v.demandeEssai.id = d.id
+    AND (:client IS NULL OR d.client = :client)
+WHERE u.role = com.FEV.SmartTest.Enum.Role.CHARGE_ESSAI
+AND u.id = :chargeId
+AND (v.id IS NULL OR d.id IS NOT NULL)
+GROUP BY 
+    u.id,
+    u.nom,
+    u.prenom,
+    v.validation
+""")
+    List<Object[]> countValidationByChargeAndUserId(
+            @Param("client") Client client,
+            @Param("chargeId") Long chargeId
+    );
 }

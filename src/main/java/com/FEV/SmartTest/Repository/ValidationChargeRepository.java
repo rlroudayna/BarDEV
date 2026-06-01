@@ -10,4 +10,5 @@ public interface ValidationChargeRepository  extends JpaRepository<ValidationCha
     List<ValidationCharge> findByChargeId(Long chargeId);
 
     boolean existsByDemandeEssaiId(Long demandeId);
+    void deleteByDemandeEssaiId(Long demandeEssaiId);
 }

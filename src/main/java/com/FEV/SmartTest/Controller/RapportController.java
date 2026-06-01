@@ -87,7 +87,7 @@ public class RapportController {
             @RequestParam String chargeEssai,
             @RequestParam String dateCreation,
             @RequestParam String commentaire,
-            @RequestPart(required = false) MultipartFile file
+            @RequestParam(required = false) MultipartFile file
     ) throws IOException {
 
         return rapportService.updateRapport(

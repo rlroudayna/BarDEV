@@ -38,12 +38,10 @@ public class UserService {
         this.clientRepository = clientRepository;
     }
 
-    // Récupérer tous les utilisateurs
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    // Récupérer un utilisateur par id
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
@@ -51,7 +49,6 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found: " + email));
     }
-    // Mettre à jour un utilisateur
 
     public User updateUser(Long id, UserRequestDTO dto) {
 
@@ -92,12 +89,10 @@ public class UserService {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-            // ✅ 1. Vérification taille (2 Mo max)
             if (file.getSize() > 2 * 1024 * 1024) {
                 throw new RuntimeException("L'image ne doit pas dépasser 2 Mo");
             }
 
-            // ✅ 2. Vérification type image
             String contentType = file.getContentType();
             if (contentType == null ||
                     !(contentType.equals("image/jpeg") ||
@@ -113,7 +108,6 @@ public class UserService {
                 Files.createDirectories(uploadPath);
             }
 
-            // ✅ 3. Nom sécurisé
             String fileName = UUID.randomUUID() + ".png";
 
             Path filePath = uploadPath.resolve(fileName);

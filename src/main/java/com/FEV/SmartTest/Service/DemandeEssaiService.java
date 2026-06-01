@@ -10,6 +10,7 @@ import com.FEV.SmartTest.Entity.Client;
 
 import com.FEV.SmartTest.Enum.*;
 import com.FEV.SmartTest.Repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -323,6 +324,10 @@ public class DemandeEssaiService {
         demande.setQcvs(dto.getQcvs());
         demande.setCarflow(dto.getCarflow());
 
+        demande.setAcquisitionEOBD(dto.getAcquisitionEOBD());
+        demande.setTypeAcquisition(dto.getTypeAcquisition());
+
+
         // ----- Mesure courant et tension -----
         demande.setMesureCourant(dto.getMesureCourant());
         demande.setMesureTension(dto.getMesureTension());
@@ -632,9 +637,39 @@ public class DemandeEssaiService {
         }).orElseThrow(() -> new RuntimeException("Demande non trouvée avec id : " + id));
     }
     // ------------------ DELETE ------------------
+    @Transactional
     public void deleteDemande(Long id) {
 
-        demandRepository.deleteById(id);
+        DemandeEssai demande = demandRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+
+        // 1. supprimer validations liées
+        validationChargeRepo.deleteByDemandeEssaiId(id);
+        validationTechnicienRepo.deleteByDemandeEssaiId(id);
+
+        // 2. supprimer fichiers si tu stockes en local
+        deleteFiles(demande);
+
+        // 3. supprimer la demande
+        demandRepository.delete(demande);
+    }
+    private void deleteFiles(DemandeEssai demande) {
+
+        // exemple validation charge
+        if (demande.getValidationCharge() != null) {
+            deleteFile(demande.getValidationCharge().getFichierINCAPath());
+            deleteFile(demande.getValidationCharge().getFichierBaRPath());
+            deleteFile(demande.getValidationCharge().getFichierChecklistPath());
+        }
+    }
+
+    private void deleteFile(String path) {
+        if (path == null) return;
+
+        File file = new File(path);
+        if (file.exists()) {
+            file.delete();
+        }
     }
     public DemandeEssai duplicateDemande(Long id) {
 
@@ -1003,48 +1038,58 @@ public class DemandeEssaiService {
     }
     public List<Map<String, Object>> statsParCharge(User user, Client clientFilter) {
 
+        // ─── 1. Résolution du client et du rôle ──────────────────────────────
         final Client client;
+        final boolean isChargeEssai = user.getRole() == Role.CHARGE_ESSAI;
+
         if (user.getRole() == Role.ADMIN) {
-            client = clientFilter;
+            client = clientFilter;           // ADMIN   → filtre libre
+        } else if (isChargeEssai) {
+            client = null;                   // CHARGE  → tous les clients
         } else {
-            client = user.getClient();
+            client = user.getClient();       // EXTERNE → son propre client
         }
 
-        List<Object[]> results = demandRepository.countValidationByCharge(client);
+        // ─── 2. Requête repo ─────────────────────────────────────────────────
+        List<Object[]> results;
 
+        if (isChargeEssai) {
+            // null client = pas de filtre client, mais filtré sur son propre id
+            results = demandRepository.countValidationByChargeAndUserId(null, user.getId());
+        } else {
+            results = demandRepository.countValidationByCharge(client);
+        }
+
+        // ─── 3. Agrégation ───────────────────────────────────────────────────
         Map<String, Map<String, Object>> response = new LinkedHashMap<>();
 
         for (Object[] r : results) {
-            Long   chargeId    = ((Number) r[0]).longValue();
-            String nom         = (String)  r[1];
-            String prenom      = (String)  r[2];
-            String validRaw    = r[3] != null ? r[3].toString() : null;
-            Long   count       = r[4] != null ? ((Number) r[4]).longValue() : 0L;
+            Long   chargeId = ((Number) r[0]).longValue();
+            String nom      = (String)  r[1];
+            String prenom   = (String)  r[2];
+            String validRaw = r[3] != null ? r[3].toString() : null;
+            Long   count    = r[4] != null ? ((Number) r[4]).longValue() : 0L;
 
-            String key = String.valueOf(chargeId);
-
-            Map<String, Object> map = response.computeIfAbsent(key, k -> {
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("chargeId",      chargeId);
-                m.put("nom",           nom);
-                m.put("prenom",        prenom);
-                m.put("client",        client == null ? "ALL" : client);
-                m.put("ok",            0L);
-                m.put("okSousReserve", 0L);
-                m.put("nok",           0L);
-                m.put("total",         0L);
-                return m;
-            });
+            Map<String, Object> map = response.computeIfAbsent(
+                    String.valueOf(chargeId), k -> {
+                        Map<String, Object> m = new LinkedHashMap<>();
+                        m.put("chargeId",      chargeId);
+                        m.put("nom",           nom);
+                        m.put("prenom",        prenom);
+                        m.put("client",        isChargeEssai ? "ALL" : (client == null ? "ALL" : client));
+                        m.put("ok",            0L);
+                        m.put("okSousReserve", 0L);
+                        m.put("nok",           0L);
+                        m.put("total",         0L);
+                        return m;
+                    });
 
             if (validRaw == null) continue;
 
             switch (validRaw) {
-                case "OK" ->
-                        map.put("ok", ((Number) map.get("ok")).longValue() + count);
-                case "OK_SOUS_RESERVE" ->
-                        map.put("okSousReserve", ((Number) map.get("okSousReserve")).longValue() + count);
-                case "NOK" ->
-                        map.put("nok", ((Number) map.get("nok")).longValue() + count);
+                case "OK"              -> map.put("ok",            ((Number) map.get("ok")).longValue()            + count);
+                case "OK_SOUS_RESERVE" -> map.put("okSousReserve", ((Number) map.get("okSousReserve")).longValue() + count);
+                case "NOK"             -> map.put("nok",           ((Number) map.get("nok")).longValue()           + count);
             }
 
             map.put("total", ((Number) map.get("total")).longValue() + count);
