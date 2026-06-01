@@ -333,10 +333,27 @@ export function ValidationCharge() {
     fetchClients();
   }, []);
 
-  const viewFile = (path: string) => {
-    const url = `${import.meta.env.VITE_API_URL}/api/validation_charge/view?path=${encodeURIComponent(path)}`;
-    window.open(url, "_blank");
-  };
+  
+  const viewFile = async (path?: string) => {
+  if (!path) return;
+  try {
+    const token = localStorage.getItem("token");
+   const response = await fetch(
+  `http://localhost:8080/api/validation_charge/view?path=${encodeURIComponent(path)}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  },
+);
+    if (!response.ok) throw new Error();
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, "_blank");
+  } catch {
+    toast.error("Impossible d'ouvrir le fichier");
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

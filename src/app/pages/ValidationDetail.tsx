@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { authFetch } from "../api";
-import { FileText, Download } from "lucide-react";
+import { FileText, Eye } from "lucide-react";
 import { toast } from "sonner";
 interface User {
   nom?: string;
@@ -255,7 +255,7 @@ export function ValidationDetail() {
                   }
                   className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
                 >
-                  <Download className="w-4 h-4" />
+                  <Eye className="w-4 h-4" />
                   Voir
                 </button>
               )}
@@ -282,7 +282,7 @@ export function ValidationDetail() {
                   }
                   className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
                 >
-                  <Download className="w-4 h-4" />
+                  <Eye className="w-4 h-4" />
                   Voir
                 </button>
               )}
@@ -308,7 +308,7 @@ export function ValidationDetail() {
                   }
                   className="flex items-center gap-2 text-sm text-blue-600 hover:underline whitespace-nowrap"
                 >
-                  <Download className="w-4 h-4" />
+                  <Eye className="w-4 h-4" />
                   Voir
                 </button>
               )}

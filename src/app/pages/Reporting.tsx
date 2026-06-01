@@ -18,7 +18,7 @@ import { authFetch } from "../api";
 import { toast } from "sonner";
 
 interface Client {
-  id?: number;
+  id: number;
   nom: string;
 }
 type Report = {
@@ -27,7 +27,7 @@ type Report = {
   demandeId: number;
   demandeNomAuto: string;
   clientId: number;
-  client: string;
+  client: Client;
   dateCreation: string;
   chargeEssai: string;
   commentaire: string;
@@ -48,7 +48,6 @@ export function Reporting() {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"view" | "edit" | "add">("add");
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -56,9 +55,9 @@ export function Reporting() {
   const [commentaire, setCommentaire] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [demandeId, setDemandeId] = useState<number | "">("");
-  const [client, setClient] = useState("");
+  const [client, setClient] = useState<Client[]>([]);
+
   const [clientId, setClientId] = useState<number | null>(null);
-  const [userClient, setUserClient] = useState<string>("");
   const [role, setRole] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [mode, setMode] = useState<"create" | "view" | "edit">("create");
@@ -77,23 +76,13 @@ export function Reporting() {
   );
 
   const handleExport = async () => {
-    if (
-      !title ||
-      !demandeId ||
-      !client ||
-      !dateCreation ||
-      !chargeEssai ||
-      !file
-    ) {
-      alert("Veuillez remplir tous les champs");
-      return;
-    }
+   
 
     const formData = new FormData();
 
     formData.append("title", title);
-    formData.append("demandeId", demandeId);
-    formData.append("clientId", clientId.toString());
+    formData.append("demandeId", demandeId.toString());
+    formData.append("clientId", clientId!.toString());
     formData.append("dateCreation", dateCreation);
     formData.append("chargeEssai", chargeEssai);
     formData.append("commentaire", commentaire);
@@ -112,7 +101,7 @@ export function Reporting() {
       setModalOpen(false);
       setTitle("");
       setDemandeId("");
-      setClient("");
+      setClients([]);
       setDateCreation("");
       setChargeEssai("");
       setCommentaire("");
@@ -125,28 +114,34 @@ export function Reporting() {
  const handleUpdate = async () => {
   if (!selectedReport) return;
 
-  if (!title || !demandeId || !clientId || !dateCreation || !chargeEssai) {
-    alert("Veuillez remplir tous les champs");
-    return;
-  }
+ 
 
   const formData = new FormData();
-
   formData.append("title", title);
   formData.append("demandeId", demandeId.toString());
-  formData.append("clientId", clientId.toString()); // ✅ AJOUT ICI
+  formData.append("clientId", clientId.toString());
   formData.append("dateCreation", dateCreation);
   formData.append("chargeEssai", chargeEssai);
   formData.append("commentaire", commentaire);
 
-  if (file) {
-    formData.append("file", file);
-  }
+  if (file) formData.append("file", file);
 
-  await authFetch(`/Rapport/update/${selectedReport.id}`, {
-    method: "PUT",
-    body: formData,
-  });
+  try {
+    await authFetch(`/Rapport/update/${selectedReport.id}`, {
+      method: "PUT",
+      body: formData,
+    });
+
+    toast.success("Rapport modifié avec succès");
+
+    const data = await authFetch("/Rapport");
+    setReports(data);
+
+    setModalOpen(false);
+    resetForm();
+  } catch (error: any) {
+    toast.error(error.message);
+  }
 };
 
   const handleDelete = async (id: number) => {
@@ -169,10 +164,8 @@ export function Reporting() {
       .toLowerCase()
       .includes(searchText.toLowerCase());
 
-   
-
-      const matchesClient =
-      clientFilter === "Tous" || r.client?.id === Number(clientFilter);
+    const matchesClient =
+      clientFilter === "Tous" ? true : r.client?.id === clientFilter;
 
     const matchDate = !filterDate || r.dateCreation === filterDate;
 
@@ -180,32 +173,16 @@ export function Reporting() {
 
     return matchSearch && matchesClient && matchDate && matchDriver;
   });
- 
 
-const fetchReports = async () => {
-  try {
-    const data = await authFetch("/Rapport");
-    setReports(data);
-  } catch (error) {
-    console.error(error);
-  }
-};
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await authFetch("/users/me");
-        setRole(user.role);
-        setUserClient(user.client);
+  const fetchReports = async () => {
+    try {
+      const data = await authFetch("/Rapport");
+      setReports(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-        setChargeEssai(user.nom + " " + user.prenom);
-        setClient(user.client); // 👈 ici
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchUser();
-  }, []);
   const fetchClients = async () => {
     try {
       const data = await authFetch("/clients");
@@ -219,7 +196,7 @@ const fetchReports = async () => {
     if (selectedReport) {
       setTitle(selectedReport.title);
       setDemandeId(selectedReport.demandeId);
-      setClientId(selectedReport.clientId);
+      setClientId(Number(selectedReport.clientId));
       setDateCreation(selectedReport.dateCreation);
       setChargeEssai(selectedReport.chargeEssai);
       setCommentaire(selectedReport.commentaire);
@@ -229,7 +206,6 @@ const fetchReports = async () => {
   const resetForm = () => {
     setTitle("");
     setDemandeId("");
-    setClient("");
     setDateCreation("");
     setChargeEssai("");
     setCommentaire("");
@@ -316,24 +292,14 @@ const fetchReports = async () => {
           />
         </div>
 
-    <select
-          value={clientFilter}
-          onChange={(e) => setClientFilter(e.target.value)}
-          className="w-full sm:w-48 h-12 px-4 bg-background border border-border rounded-lg shadow-sm text-sm text-foreground placeholder:text-muted"
-        >
-          <option value="Tous">Tous les clients</option>
-
-          {clients.map((c) => (
-            <option key={c.id} value={c.nom}>
-              {c.nom}
-            </option>
-          ))}
-        </select>
         {/* Filtre motorisation */}
         <select
-          value={selectedDriver}
-          onChange={(e) => setSelectedDriver(e.target.value)}
-          className="w-48 h-11 px-4 bg-background text-foreground border border-border rounded-lg text-foreground outline-none focus:ring-2 focus:ring-ring appearance-none transition"
+          value={clientFilter}
+          onChange={(e) =>
+            setClientFilter(
+              e.target.value === "Tous" ? "Tous" : Number(e.target.value),
+            )
+          }
         >
           <option value="">Chargé d'essai</option>
           {drivers.map((d) => (
@@ -449,7 +415,7 @@ const fetchReports = async () => {
                     </td>
 
                     <td className="px-4 py-4 text-muted-foreground-800">
-                      {report.client}
+                      {report.client?.nom}
                     </td>
 
                     <td className="px-4 py-4 text-muted-foreground-800">
@@ -515,11 +481,16 @@ const fetchReports = async () => {
       </div>
 
       {/* Modal export */}
-      {/* Modal export */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          mode === "edit" ? handleUpdate() : handleExport();
+          if (mode === "view") return;
+
+          if (mode === "edit") {
+            handleUpdate();
+          } else {
+            handleExport();
+          }
         }}
       >
         {modalOpen && (
@@ -612,19 +583,20 @@ const fetchReports = async () => {
                       </label>
                       <select
                         name="clientId"
-                        defaultValue={selectedReport?.client?.id ?? ""}
-                        required
-                        disabled={modalMode === "view"}
+                        value={clientId !== null ? String(clientId) : ""}
                         onChange={(e) => setClientId(Number(e.target.value))}
+                        disabled={mode === "view"}
+                        required
                         className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
-                     focus:outline-none focus:ring-2 focus:ring-ring transition"
+   focus:outline-none focus:ring-2 focus:ring-ring transition"
                       >
                         <option value="" disabled>
                           Sélectionner un client
                         </option>
-
                         {clients.map((c) => (
                           <option key={c.id} value={c.id}>
+                            {" "}
+                            {/* ← String() */}
                             {c.nom}
                           </option>
                         ))}
@@ -657,8 +629,7 @@ const fetchReports = async () => {
                         type="text"
                         disabled={mode === "view"}
                         placeholder="Nom du chargé d'essai"
-                        value={chargeEssai}
-                        readOnly
+                        
                         className="h-11 px-3 rounded-lg border border-border bg-background text-foreground"
                       />
                     </div>
@@ -704,18 +675,18 @@ const fetchReports = async () => {
                       setModalOpen(false);
                       resetForm();
                     }}
-                    className="px-11 py-2.5 bg-card border-2 border-foreground text-foreground font-semibold rounded-lg transition shadow-sm"
+                    className="px-11 py-2.5 bg-card border border-border text-foreground font-semibold rounded-lg transition shadow-sm"
                   >
                     Annuler
                   </button>
-
-                  <button
-                    type="submit"
-                    disabled={mode === "view"}
-                    className="px-12 py-2.5 bg-[#E30613] text-white rounded-lg font-bold hover:bg-[#c70511] transition shadow-sm"
-                  >
-                    {mode === "edit" ? "Modifier" : "Enregistrer"}
-                  </button>
+                  {mode !== "view" && (
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-red-600 text-white rounded-lg"
+                >
+                  Enregistrer
+                </button>
+              )}
                 </div>
               </div>
             </div>

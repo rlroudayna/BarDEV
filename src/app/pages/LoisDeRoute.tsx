@@ -23,8 +23,9 @@ interface Lois {
   id?: number;
   nom: string;
   temperature: number | null;
-  clientId: number | null;
-  client: Client | null;
+
+  client?: Client;
+  clientId: number;
   norme: Norme | "";
   inertieKg: number | null;
   masseEssaiKg: number | null;
@@ -38,8 +39,7 @@ interface Lois {
 const INITIAL_LOIS: Lois = {
   nom: "",
   temperature: null,
-  client: null,
-  clientId: null,
+  clientId: 0,
   norme: "",
   inertieKg: null,
   masseEssaiKg: null,
@@ -124,14 +124,7 @@ export function LoisDeRoute() {
 
     fetchUser();
   }, []);
-  useEffect(() => {
-    if (userClient && modalMode === "add") {
-      setNewLois((prev) => ({
-        ...prev,
-        client: userClient as Client,
-      }));
-    }
-  }, [userClient, modalMode]);
+
   const addLois = async (newLois: Lois) => {
     try {
       const created = await authFetch("/lois-route", {
@@ -151,7 +144,7 @@ export function LoisDeRoute() {
 
     const loisToSave: Lois = {
       ...newLois,
-      clientId: newLois.client?.id ?? null,
+      clientId: newLois.client?.id ?? 0,
     };
 
     try {
@@ -203,7 +196,6 @@ export function LoisDeRoute() {
   const [newLois, setNewLois] = useState<Lois>({
     nom: "",
     temperature: 0,
-    client: null,
     clientId: 0,
     norme: Norme.WLTP,
     inertieKg: 0,
@@ -237,27 +229,22 @@ export function LoisDeRoute() {
   }, []);
 
   useEffect(() => {
-    if (modalMode !== "add") return;
-    if (!userClient || !newLois.norme) return;
+    if (modalMode === "view") return; 
+    if (!newLois.client || !newLois.norme) return;
 
-    const prefix = `Loi_${userClient.nom}_${newLois.norme}`;
-
+    const prefix = `Loi_${newLois.client.nom}_${newLois.norme}`;
     const regex = new RegExp(`^${prefix}_(\\d{4})$`);
-
     const numbers = lois
       .map((l) => {
         const match = l.nom?.match(regex);
         return match ? parseInt(match[1], 10) : null;
       })
       .filter((n): n is number => n !== null);
-
     const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
 
-    setNewLois((prev) => ({
-      ...prev,
-      nom: `${prefix}_${next}`,
-    }));
-  }, [userClient, newLois.norme, modalMode, lois]);
+    setNewLois((prev) => ({ ...prev, nom: `${prefix}_${next}` }));
+  }, [newLois.client, newLois.norme, modalMode, lois]);
+
   const fetchClients = async () => {
     try {
       const data = await authFetch("/clients");
@@ -284,8 +271,11 @@ export function LoisDeRoute() {
         {canEdit && (
           <button
             onClick={() => {
-              setNewLois(INITIAL_LOIS); // <--- On vide le formulaire ici
-              setModalMode("add"); // <--- On s'assure d'être en mode ajout
+              setModalMode("add");
+              setSelectedLois(null);
+              setNewLois({
+                ...INITIAL_LOIS,
+              });
               setShowModal(true);
             }}
             className="ml-auto h-11 px-6 bg-[#B9032C] text-white rounded-lg hover:brightness-110 flex items-center gap-2 transition-all shadow-md"
@@ -673,7 +663,7 @@ focus:outline-none focus:ring-2 focus:ring-ring transition"
                       </label>
                       <select
                         name="client"
-                        value={newLois.client?.id || ""}
+                        value={newLois.client?.id ?? newLois.clientId ?? 0}
                         required
                         disabled={modalMode === "view"}
                         onChange={(e) => {
@@ -686,7 +676,7 @@ focus:outline-none focus:ring-2 focus:ring-ring transition"
                         className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
                          focus:outline-none focus:ring-2 focus:ring-ring transition"
                       >
-                        <option value="" disabled>
+                        <option value={0} disabled>
                           Sélectionner un client
                         </option>
 

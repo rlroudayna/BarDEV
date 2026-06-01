@@ -320,7 +320,7 @@ export function Validation() {
             .includes(filterProjet);
 
       const matchesClient =
-      clientFilter === "Tous" || row.client?.id === Number(clientFilter);
+        clientFilter === "Tous" || row.client?.id === Number(clientFilter);
       const matchesDate = !filterDate
         ? true
         : row.datePlanification?.split("T")[0] === filterDate;
@@ -375,17 +375,17 @@ export function Validation() {
     fetchCurrentUser();
   }, []);
 
-   const fetchClients = async () => {
-      try {
-        const data = await authFetch("/clients");
-        setClients(data);
-      } catch (error) {
-        console.error("Erreur chargement clients", error);
-      }
-    };
-    useEffect(() => {
-      fetchClients();
-    }, []);
+  const fetchClients = async () => {
+    try {
+      const data = await authFetch("/clients");
+      setClients(data);
+    } catch (error) {
+      console.error("Erreur chargement clients", error);
+    }
+  };
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const fetchCycles = async () => {
     try {
@@ -416,7 +416,7 @@ export function Validation() {
     fetchUser();
   }, []);
 
-   useEffect(() => {
+  useEffect(() => {
     fetchClients();
   }, []);
   return (
@@ -432,23 +432,27 @@ export function Validation() {
           </div>
         </div>
 
-        <div className="p-5 bg-card rounded-xl border border-border shadow-sm flex items-center gap-4">
-          <div className="flex flex-wrap gap-4 items-center">
+        <div className="w-full p-5 bg-card rounded-xl border border-border shadow-sm flex items-center gap-4 ">
+          {" "}
+            <div className="flex gap-4 items-center w-full">
             {/* Recherche */}
             <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+
               <input
                 type="text"
                 placeholder="Rechercher par nom de demande..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-12 pl-12 pr-30 bg-background text-foreground border border-border rounded-lg shadow-sm  bg-background"
+                className="w-full h-12 pl-12 pr-4 bg-background text-foreground border border-border rounded-lg shadow-sm placeholder:text-muted-foreground"
               />
             </div>
             {/* Filtre client */}
-                  {["ADMIN", "CHARGE", "TECHNICIEN"].some((r) => role?.includes(r)) && (
-            <select
-              className="
+            {["ADMIN", "CHARGE", "TECHNICIEN"].some((r) =>
+              role?.includes(r),
+            ) && (
+              <select
+                className="
   w-full sm:w-48 h-12 px-4
   bg-background
   text-foreground
@@ -457,18 +461,18 @@ export function Validation() {
   focus:outline-none focus:ring-2 focus:ring-ring
   transition
 "
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-            >
-              <option value="Tous">Client (Tous)</option>
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+              >
+                <option value="Tous">Client (Tous)</option>
 
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nom}
-                </option>
-              ))}
-            </select>
-          )}
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nom}
+                  </option>
+                ))}
+              </select>
+            )}
             {/* Filtre véhicule (CORRIGÉ) */}
             <select
               value={filterVehicule}
@@ -578,7 +582,7 @@ export function Validation() {
                           {row.numeroProjet}
                         </td>
                         <td className="px-2 py-4 text-muted-foreground-800">
-                          {row.client?.nom ?? "-" }
+                          {row.client?.nom ?? "-"}
                         </td>
                         <td className="px-4 py-4 text-muted-foreground-800">
                           {row.vehicule?.identificateur ?? "-"}

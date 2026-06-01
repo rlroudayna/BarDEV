@@ -33,9 +33,9 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   interface Client {
-  id?: number;
-  nom: string;
-}
+    id?: number;
+    nom: string;
+  }
   const [profileData, setProfileData] = useState({
     id: "",
     nom: "",
@@ -265,24 +265,28 @@ export function Profile() {
                       onClick={async () => {
                         try {
                           const updatedUser = await authFetch(
-                            `/users/${profileData.id}`,
+                            `/users/${profileData.id}/phone`,
                             {
                               method: "PUT",
                               headers: {
-                                "Content-Type": "application/json",
+                                "Content-Type": "text/plain",
                               },
-                              body: JSON.stringify({
-                                ...profileData,
-                                numeroTelephone: phone, // ✔ FIX IMPORTANT
-                              }),
+                              body: phone,
                             },
                           );
 
-                          setProfileData(updatedUser);
+                          setProfileData((prev) => ({
+                            ...prev,
+                            numeroTelephone: updatedUser.numeroTelephone,
+                          }));
+
                           setPhone(updatedUser.numeroTelephone);
                           setIsEditingPhone(false);
+
+                          toast.success("Téléphone mis à jour !");
                         } catch (err) {
                           console.error("Erreur update téléphone", err);
+                          toast.error("Erreur lors de la mise à jour");
                         }
                       }}
                     />

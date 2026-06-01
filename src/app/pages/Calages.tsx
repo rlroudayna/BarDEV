@@ -52,6 +52,7 @@ export function Calages() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [clientFilter, setClientFilter] = useState<number | "Tous">("Tous");
   const [vehicules, setVehicules] = useState<any[]>([]);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [loisRoutes, setLoisRoutes] = useState<any[]>([]);
   const [userClient, setUserClient] = useState<string>("");
   const [clients, setClients] = useState<Client[]>([]);
@@ -123,6 +124,7 @@ export function Calages() {
     }
   };
   const fillForm = (calage: Calage) => {
+    setIsInitializing(true); 
     setNewCalage({
       ...INITIAL_CALAGE,
       ...calage,
@@ -195,20 +197,19 @@ export function Calages() {
       setCalages((prev) => prev.filter((c) => c.id !== id));
       toast.success("Calage supprimé !");
       await fetchCalages();
-    } 
-   catch (err: any) {
-    console.error(err);
+    } catch (err: any) {
+      console.error(err);
 
-    const isConstraint =
-      err?.message?.includes("constraint") ||
-      err?.message?.includes("foreign key");
+      const isConstraint =
+        err?.message?.includes("constraint") ||
+        err?.message?.includes("foreign key");
 
-    const message = isConstraint
-      ? "Suppression impossible : ce calage est utilisé dans d'autres données."
-      : "Erreur lors de la suppression du calage.";
+      const message = isConstraint
+        ? "Suppression impossible : ce calage est utilisé dans d'autres données."
+        : "Erreur lors de la suppression du calage.";
 
-    toast.error(message);
-  }
+      toast.error(message);
+    }
   };
   useEffect(() => {
     const fetchUser = async () => {
@@ -267,6 +268,8 @@ export function Calages() {
     return `${base}_${suffix}`;
   };
   useEffect(() => {
+    if (modalMode === "view") return; // ← bloquer seulement view
+
     const name = generateCalageName(
       vehicules.find((v) => v.id === newCalage.vehiculeAssocie?.id),
       loisRoutes.find((l) => l.id === newCalage.loiRouteAssocie?.id),
@@ -274,12 +277,14 @@ export function Calages() {
     );
 
     if (name) {
-      setNewCalage((prev) => ({
-        ...prev,
-        nom: name,
-      }));
+      setNewCalage((prev) => ({ ...prev, nom: name }));
     }
-  }, [newCalage.vehiculeAssocie?.id, newCalage.loiRouteAssocie?.id, calages]);
+  }, [
+    newCalage.vehiculeAssocie?.id,
+    newCalage.loiRouteAssocie?.id,
+    modalMode,
+    calages,
+  ]);
 
   const fetchClients = async () => {
     try {

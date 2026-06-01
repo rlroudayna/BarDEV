@@ -71,6 +71,8 @@ export function Users() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
   const [roleFilter, setRoleFilter] = useState("Tous");
+  const INTERNAL_ROLES = [Role.ADMIN, Role.CHARGE_ESSAI, Role.TECHNICIEN_ESSAI];
+  const FEV_CLIENT_NAME = "FEV";
 
   // add | view | edit
   // Form State
@@ -120,21 +122,19 @@ export function Users() {
     setSelectedUser(null);
   };
 
+  // Juste après vos autres useEffects
   useEffect(() => {
-    fetchUsers();
-    fetchClients;
-  }, []);
-  const fetchClients = async () => {
-    try {
-      const data = await authFetch("/clients");
-      setClients(data);
-    } catch (error) {
-      console.error("Erreur chargement clients", error);
+    if (clients.length === 0) return;
+
+    const isInternal = INTERNAL_ROLES.includes(formData.role as Role);
+    if (!isInternal) return;
+
+    const fevClient = clients.find((c) => c.nom.trim().toLowerCase() === "fev");
+
+    if (fevClient) {
+      setFormData((prev) => ({ ...prev, clientId: String(fevClient.id) }));
     }
-  };
-  useEffect(() => {
-    fetchClients();
-  }, []);
+  }, [clients, formData.role]);
 
   const fetchUsers = async () => {
     try {
@@ -144,9 +144,18 @@ export function Users() {
       console.error("Erreur chargement users", error);
     }
   };
-
-  const INTERNAL_ROLES = [Role.ADMIN, Role.CHARGE_ESSAI, Role.TECHNICIEN_ESSAI];
-  const FEV_CLIENT_NAME = "FEV";
+  const fetchClients = async () => {
+    try {
+      const data = await authFetch("/clients");
+      setClients(data);
+    } catch (error) {
+      console.error("Erreur chargement clients", error);
+    }
+  };
+  useEffect(() => {
+    fetchUsers();
+    fetchClients();
+  }, []);
 
   const isInternalRole = (role: string) =>
     [Role.ADMIN, Role.CHARGE_ESSAI, Role.TECHNICIEN_ESSAI].includes(
@@ -574,19 +583,12 @@ export function Users() {
                   disabled={modalMode === "view"}
                   onChange={(e) => {
                     const role = e.target.value as Role;
-                    const isInternal = INTERNAL_ROLES.includes(role);
-
-                    // Trouver le client FEV dans la liste
-                    const fevClient = clients.find(
-                      (c) => c.nom === FEV_CLIENT_NAME,
-                    );
+                    const isInternal = INTERNAL_ROLES.includes(role as Role);
 
                     setFormData((prev) => ({
                       ...prev,
                       role,
-                      // Si rôle interne → forcer FEV, sinon vider le champ
-                      clientId:
-                        isInternal && fevClient ? String(fevClient.id) : "",
+                      clientId: isInternal ? prev.clientId : "", // vider seulement si EXTERNE
                     }));
                   }}
                   className="h-11 px-3 rounded-lg border border-border bg-background text-foreground
@@ -626,7 +628,9 @@ export function Users() {
                   <option value="">Client</option>
 
                   {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={String(c.id)}>
+                      {" "}
+                      {/* ← String() ici */}
                       {c.nom}
                     </option>
                   ))}

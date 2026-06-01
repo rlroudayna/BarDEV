@@ -437,7 +437,7 @@ export function ValidationConducteur() {
       </div>
       {/* Boutons */}
       {/* Boutons */}
-      <div className="flex justify-end gap-95 mt-8">
+      <div className="flex justify-end gap-190 mt-8">
         <button
           onClick={() => navigate("/app/validation")}
           className="px-20 py-2.5 bg-card border-2 border-gray text-[#E30613] font-semibold rounded-lg transition-all shadow-sm"
